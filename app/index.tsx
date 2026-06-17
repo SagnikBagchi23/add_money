@@ -11,28 +11,99 @@ import {
   Platform,
 } from 'react-native';
 
-const EXCHANGE_RATE = 96.71; // 1 USD = 96.71 INR
-
-const C = {
-  bgPrimary: '#060809',
-  bgTertiary: '#1E2224',
-  border: '#252A2C',
-  contentPrimary: '#F2F5F7',
-  contentSecondary: '#989EA0',
-  contentAccent: '#04B488',
-  numpadText: '#EAEFF1',
-} as const;
-
-// Icon chars from groww-huge-standard font (Private Use Area — encoding-safe)
-const IC = {
-  arrowLeft:   String.fromCharCode(0xEA1B), // gh-standard-arrow-left-01
-  arrowUpDown: String.fromCharCode(0xEA24), // gh-standard-arrow-up-down
-  infoCircle:  String.fromCharCode(0xEADB), // gh-standard-information-circle
-  arrowRight:  String.fromCharCode(0xEA1D), // gh-standard-arrow-right-01
-  delete:      String.fromCharCode(0xEA89), // gh-standard-delete-01
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Currency = 'INR' | 'USD';
+type Theme = 'dark' | 'light';
+type DeviceId = 'pro17' | 'se';
+
+// ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
+
+const IC = {
+  arrowLeft:   String.fromCharCode(0xEA1B),
+  arrowUpDown: String.fromCharCode(0xEA24),
+  infoCircle:  String.fromCharCode(0xEADB),
+  arrowRight:  String.fromCharCode(0xEA1D),
+  delete:      String.fromCharCode(0xEA89),
+};
+
+// ─── Theme Colors ─────────────────────────────────────────────────────────────
+
+type ColorSet = {
+  bgPrimary: string;
+  bgTertiary: string;
+  border: string;
+  contentPrimary: string;
+  contentSecondary: string;
+  contentAccent: string;
+  numpadText: string;
+  phoneBorder: string;
+};
+
+const THEME_COLORS: Record<Theme, ColorSet> = {
+  dark: {
+    bgPrimary:       '#060809',
+    bgTertiary:      '#1E2224',
+    border:          '#252A2C',
+    contentPrimary:  '#F2F5F7',
+    contentSecondary:'#989EA0',
+    contentAccent:   '#04B488',
+    numpadText:      '#EAEFF1',
+    phoneBorder:     'rgba(255,255,255,0.13)',
+  },
+  light: {
+    bgPrimary:       '#FFFFFF',
+    bgTertiary:      '#F2F5F7',
+    border:          '#DDE1E4',
+    contentPrimary:  '#0D1216',
+    contentSecondary:'#5D6668',
+    contentAccent:   '#00A377',
+    numpadText:      '#0D1216',
+    phoneBorder:     'rgba(0,0,0,0.14)',
+  },
+};
+
+const SHELL_BG: Record<Theme, string> = { dark: '#0B0D0F', light: '#D4D9DF' };
+
+// ─── Device Configs ───────────────────────────────────────────────────────────
+
+type DeviceConfig = {
+  name: string;
+  screenW: number;
+  screenH: number;
+  cornerRadius: number;
+  hasDynamicIsland: boolean;
+  statusBarH: number;
+  homeIndicatorH: number;
+  numpadPadV: number;
+};
+
+const DEVICES: Record<DeviceId, DeviceConfig> = {
+  pro17: {
+    name: 'iPhone 17 Pro',
+    screenW: 393,
+    screenH: 852,
+    cornerRadius: 55,
+    hasDynamicIsland: true,
+    statusBarH: 59,
+    homeIndicatorH: 34,
+    numpadPadV: 16,
+  },
+  se: {
+    name: 'iPhone SE',
+    screenW: 375,
+    screenH: 667,
+    cornerRadius: 22,
+    hasDynamicIsland: false,
+    statusBarH: 44,
+    homeIndicatorH: 0,
+    numpadPadV: 8,
+  },
+};
+
+// ─── App Data ─────────────────────────────────────────────────────────────────
+
+const EXCHANGE_RATE = 96.71;
 
 const NUMPAD_ROWS = [
   ['1', '2', '3'],
@@ -66,19 +137,221 @@ function buildDisplayAmount(raw: string, currency: Currency): string {
 function buildConversion(raw: string, currency: Currency): string {
   const num = parseFloat(raw || '0');
   if (currency === 'INR') {
-    const usd = (num / EXCHANGE_RATE).toFixed(2);
-    return `You will get $${usd}`;
+    return `You will get $${(num / EXCHANGE_RATE).toFixed(2)}`;
   }
-  const inr = (num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-  return `= ₹${inr}`;
+  return `= ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
+
+// ─── Status Bar Icon Sub-Components ──────────────────────────────────────────
+
+function SignalBars({ color }: { color: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 12, gap: 2 }}>
+      {[4, 7, 10, 12].map((h, i) => (
+        <View key={i} style={{ width: 3, height: h, backgroundColor: color, borderRadius: 0.75 }} />
+      ))}
+    </View>
+  );
+}
+
+function BatteryIcon({ color }: { color: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{
+        width: 24, height: 12, borderRadius: 3,
+        borderWidth: 1.2, borderColor: color, padding: 2,
+      }}>
+        <View style={{ flex: 1, width: '78%', backgroundColor: color, borderRadius: 1 }} />
+      </View>
+      <View style={{ width: 1.5, height: 5, backgroundColor: color, opacity: 0.45, marginLeft: 1, borderRadius: 1 }} />
+    </View>
+  );
+}
+
+// ─── Phone Chrome Components ──────────────────────────────────────────────────
+
+function PhoneStatusBar({
+  device, iconColor, bgColor,
+}: { device: DeviceConfig; iconColor: string; bgColor: string }) {
+  if (device.hasDynamicIsland) {
+    return (
+      <View style={{
+        height: device.statusBarH, backgroundColor: bgColor,
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 24, paddingTop: 14,
+      }}>
+        <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 15, lineHeight: 20, color: iconColor, letterSpacing: 0.1 }}>
+          9:41
+        </Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <View style={{
+            width: 126, height: 36, backgroundColor: '#000', borderRadius: 99,
+            borderWidth: 1, borderColor: 'rgba(120,120,120,0.18)',
+          }} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <SignalBars color={iconColor} />
+          <BatteryIcon color={iconColor} />
+        </View>
+      </View>
+    );
+  }
+
+  // iPhone SE: earpiece + traditional status bar
+  return (
+    <View style={{ height: device.statusBarH, backgroundColor: bgColor, paddingTop: 8 }}>
+      <View style={{
+        width: 96, height: 5, backgroundColor: '#000', opacity: 0.45,
+        borderRadius: 3, alignSelf: 'center', marginBottom: 5,
+      }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 }}>
+        <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 16, color: iconColor }}>
+          9:41
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+          <SignalBars color={iconColor} />
+          <BatteryIcon color={iconColor} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function PhoneHomeIndicator({ device, color }: { device: DeviceConfig; color: string }) {
+  if (device.homeIndicatorH === 0) return null;
+  return (
+    <View style={{ height: device.homeIndicatorH, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8 }}>
+      <View style={{ width: 134, height: 5, backgroundColor: color, opacity: 0.28, borderRadius: 99 }} />
+    </View>
+  );
+}
+
+// ─── Control Panel (web only) ─────────────────────────────────────────────────
+
+function ControlPanel({
+  theme, onTheme, deviceId, onDevice,
+}: {
+  theme: Theme; onTheme: (t: Theme) => void;
+  deviceId: DeviceId; onDevice: (d: DeviceId) => void;
+}) {
+  return (
+    <View style={cp.panel}>
+      {/* Appearance */}
+      <View style={cp.section}>
+        <Text style={cp.sectionLabel}>APPEARANCE</Text>
+        <View style={cp.segmentRow}>
+          {(['dark', 'light'] as Theme[]).map((t) => (
+            <TouchableOpacity
+              key={t}
+              style={[cp.segBtn, theme === t && cp.segBtnActive]}
+              onPress={() => onTheme(t)}
+              activeOpacity={0.7}
+            >
+              <Text style={[cp.segBtnText, theme === t && cp.segBtnTextActive]}>
+                {t === 'dark' ? 'Dark' : 'Light'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Device */}
+      <View style={cp.section}>
+        <Text style={cp.sectionLabel}>DEVICE</Text>
+        <View style={{ gap: 3 }}>
+          {(Object.entries(DEVICES) as [DeviceId, DeviceConfig][]).map(([id, cfg]) => (
+            <TouchableOpacity
+              key={id}
+              style={[cp.deviceBtn, deviceId === id && cp.deviceBtnActive]}
+              onPress={() => onDevice(id)}
+              activeOpacity={0.7}
+            >
+              {/* Mini phone outline icon */}
+              <View style={[cp.phoneIcon, deviceId === id && cp.phoneIconActive]}>
+                <View style={[cp.phoneIconHome, deviceId === id && cp.phoneIconHomeActive]} />
+              </View>
+              <View>
+                <Text style={[cp.deviceName, deviceId === id && cp.deviceNameActive]}>
+                  {cfg.name}
+                </Text>
+                <Text style={cp.deviceMeta}>
+                  {cfg.screenW} × {cfg.screenH}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const cp = StyleSheet.create({
+  panel: {
+    width: 188,
+    backgroundColor: '#161A1C',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    gap: 22,
+  },
+  section: { gap: 8 },
+  sectionLabel: {
+    fontFamily: 'GrowwSans-Medium',
+    fontSize: 10,
+    lineHeight: 14,
+    color: '#5D6668',
+    letterSpacing: 0.9,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    backgroundColor: '#0C0E0F',
+    borderRadius: 10,
+    padding: 3,
+    gap: 2,
+  },
+  segBtn: {
+    flex: 1, height: 32, borderRadius: 7,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  segBtnActive: { backgroundColor: '#2D3236' },
+  segBtnText: { fontFamily: 'GrowwSans-Medium', fontSize: 13, color: '#5D6668' },
+  segBtnTextActive: { color: '#F2F5F7' },
+  deviceBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 10, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 10,
+  },
+  deviceBtnActive: { backgroundColor: '#252A2C' },
+  phoneIcon: {
+    width: 18, height: 28, borderRadius: 4,
+    borderWidth: 1.5, borderColor: '#3D4446',
+    alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 3,
+  },
+  phoneIconActive: { borderColor: '#989EA0' },
+  phoneIconHome: {
+    width: 8, height: 2, backgroundColor: '#3D4446', borderRadius: 1, opacity: 0.6,
+  },
+  phoneIconHomeActive: { backgroundColor: '#989EA0' },
+  deviceName: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 16, color: '#5D6668' },
+  deviceNameActive: { color: '#F2F5F7' },
+  deviceMeta: { fontFamily: 'GrowwSans-Regular', fontSize: 10, lineHeight: 14, color: '#3D4446' },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const IS_WEB = Platform.OS === 'web';
 
 export default function AddMoneyScreen() {
   const [currency, setCurrency] = useState<Currency>('INR');
   const [raw, setRaw] = useState('');
+  const [theme, setTheme] = useState<Theme>('dark');
+  const [deviceId, setDeviceId] = useState<DeviceId>('pro17');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
+
+  const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
+  const device = IS_WEB ? DEVICES[deviceId] : DEVICES.pro17;
+  const iconColor = (IS_WEB && theme === 'light') ? '#0D1216' : '#FFFFFF';
 
   useEffect(() => {
     const anim = Animated.loop(
@@ -93,10 +366,7 @@ export default function AddMoneyScreen() {
 
   const onKey = useCallback(
     (key: string) => {
-      if (key === 'back') {
-        setRaw((p) => p.slice(0, -1));
-        return;
-      }
+      if (key === 'back') { setRaw((p) => p.slice(0, -1)); return; }
       if (key === '.') {
         if (raw.includes('.')) return;
         setRaw((p) => (p === '' ? '0.' : p + '.'));
@@ -110,10 +380,7 @@ export default function AddMoneyScreen() {
     [raw]
   );
 
-  const onToggle = () => {
-    setCurrency((p) => (p === 'INR' ? 'USD' : 'INR'));
-    setRaw('');
-  };
+  const onToggle = () => { setCurrency((p) => (p === 'INR' ? 'USD' : 'INR')); setRaw(''); };
 
   const displayAmount = buildDisplayAmount(raw, currency);
   const conversionText = buildConversion(raw, currency);
@@ -123,74 +390,70 @@ export default function AddMoneyScreen() {
     <>
       <StatusBar barStyle="light-content" backgroundColor={C.bgPrimary} />
 
-      {/* ─── Top App Bar ─── */}
+      {/* Top App Bar */}
       <View style={s.topBar}>
         <TouchableOpacity style={s.iconBtn}>
-          <Text style={s.iconText}>{IC.arrowLeft}</Text>
+          <Text style={[s.iconText, { color: C.contentPrimary }]}>{IC.arrowLeft}</Text>
         </TouchableOpacity>
         <View style={s.topBarCenter}>
-          <Text style={s.topTitle}>Add money</Text>
-          <Text style={s.topSubtitle}>₹0.00 available</Text>
+          <Text style={[s.topTitle, { color: C.contentPrimary }]}>Add money</Text>
+          <Text style={[s.topSubtitle, { color: C.contentSecondary }]}>₹0.00 available</Text>
         </View>
-        {/* spacer to balance back button */}
         <View style={s.iconBtn} />
       </View>
 
-      {/* ─── Amount Input Zone ─── */}
+      {/* Amount Zone */}
       <View style={s.amountZone}>
-        {/* centered lockup */}
         <View style={s.amountCenterWrap}>
           <View style={s.amountLockup}>
-            {/* Amount + blinking cursor */}
             <View style={s.amountRow}>
-              <Text style={s.amountText}>{displayAmount}</Text>
-              <Animated.View style={[s.cursor, { opacity: cursorOpacity }]} />
+              <Text style={[s.amountText, { color: C.contentPrimary }]}>{displayAmount}</Text>
+              <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent }]} />
             </View>
-
-            {/* Currency toggle button */}
-            <TouchableOpacity style={s.toggleBtn} onPress={onToggle} activeOpacity={0.7}>
-              <Text style={s.toggleIcon}>{IC.arrowUpDown}</Text>
+            <TouchableOpacity
+              style={[s.toggleBtn, { backgroundColor: C.bgTertiary }]}
+              onPress={onToggle}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.toggleIcon, { color: C.contentSecondary }]}>{IC.arrowUpDown}</Text>
             </TouchableOpacity>
-
-            {/* Conversion text + info icon */}
             <View style={s.conversionRow}>
-              <Text style={s.conversionText}>{conversionText}</Text>
-              <Text style={s.infoIcon}>{IC.infoCircle}</Text>
+              <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
+              <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
             </View>
-
-            {/* Quick-add pills */}
             <View style={s.pillRow}>
               {pills.map(({ label, value }) => (
-                <TouchableOpacity key={label} style={s.pill} onPress={() => setRaw(value)} activeOpacity={0.7}>
-                  <Text style={s.pillText}>{label}</Text>
+                <TouchableOpacity
+                  key={label}
+                  style={[s.pill, { borderColor: C.border, backgroundColor: C.bgPrimary }]}
+                  onPress={() => setRaw(value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[s.pillText, { color: C.contentPrimary }]}>{label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         </View>
-
-        {/* Receive-by text — pinned to bottom of zone */}
-        <Text style={s.receiveByText}>Receive money by 5:00 PM, 19 Jun</Text>
+        <Text style={[s.receiveByText, { color: C.contentSecondary }]}>
+          Receive money by 5:00 PM, 19 Jun
+        </Text>
       </View>
 
-      {/* ─── Payment Method Row ─── */}
-      <View style={s.paymentRow}>
+      {/* Payment Method Row */}
+      <View style={[s.paymentRow, { borderColor: C.border }]}>
         <View style={s.bankLogoWrap}>
-          <Image
-            source={require('../assets/hdfc-bank.png')}
-            style={s.bankLogo}
-            resizeMode="cover"
-          />
+          <Image source={require('../assets/hdfc-bank.png')} style={s.bankLogo} resizeMode="cover" />
         </View>
         <View style={s.paymentInfo}>
-          <Text style={s.paymentTitle}>Net Banking (Remittance)</Text>
-          <Text style={s.paymentSub}>HDFC Bank ••••7080</Text>
+          <Text style={[s.paymentTitle, { color: C.contentPrimary }]}>Net Banking (Remittance)</Text>
+          <Text style={[s.paymentSub, { color: C.contentSecondary }]}>HDFC Bank ••••7080</Text>
         </View>
-        <Text style={s.chevronIcon}>{IC.arrowRight}</Text>
+        <Text style={[s.chevronIcon, { color: C.contentSecondary }]}>{IC.arrowRight}</Text>
       </View>
 
-      {/* ─── Numpad ─── */}
-      <View style={s.numpad}>
+      {/* Numpad */}
+      <View style={[s.numpad, { paddingVertical: device.numpadPadV }]}>
         {NUMPAD_ROWS.map((row, ri) => (
           <View key={ri} style={s.numpadRow}>
             {row.map((key) => (
@@ -200,290 +463,127 @@ export default function AddMoneyScreen() {
                 onPress={() => onKey(key)}
                 activeOpacity={0.6}
               >
-                {key === 'back' ? (
-                  <Text style={s.numpadIcon}>{IC.delete}</Text>
-                ) : (
-                  <Text style={s.numpadDigit}>{key}</Text>
-                )}
+                {key === 'back'
+                  ? <Text style={[s.numpadIcon, { color: C.numpadText }]}>{IC.delete}</Text>
+                  : <Text style={[s.numpadDigit, { color: C.numpadText }]}>{key}</Text>
+                }
               </TouchableOpacity>
             ))}
           </View>
         ))}
       </View>
 
-      {/* ─── CTA Button Dock ─── */}
-      <View style={s.ctaDock}>
-        <TouchableOpacity style={s.ctaBtn} activeOpacity={0.85}>
+      {/* CTA Dock */}
+      <View style={[s.ctaDock, { backgroundColor: C.bgPrimary, borderColor: C.border }]}>
+        <TouchableOpacity style={[s.ctaBtn, { backgroundColor: C.contentAccent }]} activeOpacity={0.85}>
           <Text style={s.ctaText}>Add money</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* ─── Home Indicator ─── */}
-      <View style={s.homeIndicator}>
-        <View style={s.homeHandle} />
       </View>
     </>
   );
 
+  // ── Web ────────────────────────────────────────────────────────────────────
   if (IS_WEB) {
     return (
-      <View style={s.webShell}>
-        <View style={s.phoneMockup}>{screenContent}</View>
+      <View style={[s.webShell, { backgroundColor: SHELL_BG[theme] }]}>
+        {/* Left control panel */}
+        <View style={{ marginRight: 28, alignSelf: 'center' }}>
+          <ControlPanel
+            theme={theme}
+            onTheme={setTheme}
+            deviceId={deviceId}
+            onDevice={setDeviceId}
+          />
+        </View>
+
+        {/* Phone frame */}
+        <View style={{
+          width: device.screenW,
+          height: device.screenH,
+          backgroundColor: C.bgPrimary,
+          borderRadius: device.cornerRadius,
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: C.phoneBorder,
+        }}>
+          <PhoneStatusBar device={device} iconColor={iconColor} bgColor={C.bgPrimary} />
+          <View style={{ flex: 1 }}>
+            {screenContent}
+          </View>
+          <PhoneHomeIndicator device={device} color={iconColor} />
+        </View>
       </View>
     );
   }
 
+  // ── Native ─────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={s.safeArea}>{screenContent}</SafeAreaView>
+    <SafeAreaView style={[s.safeArea, { backgroundColor: THEME_COLORS.dark.bgPrimary }]}>
+      {screenContent}
+      <View style={s.homeIndicator}>
+        <View style={[s.homeHandle, { backgroundColor: THEME_COLORS.dark.contentSecondary }]} />
+      </View>
+    </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: C.bgPrimary },
+// ─── StyleSheet (layout — colors applied inline) ──────────────────────────────
 
-  // Web phone shell
+const s = StyleSheet.create({
+  safeArea: { flex: 1 },
+
   webShell: {
     flex: 1,
-    backgroundColor: '#111417',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phoneMockup: {
-    width: 360,
-    height: 780,
-    backgroundColor: C.bgPrimary,
-    borderRadius: 40,
-    overflow: 'hidden',
-  },
-
-  // ─── Top Bar ───
-  topBar: {
-    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  iconBtn: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
     justifyContent: 'center',
   },
+
+  topBar: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 },
+  iconBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   topBarCenter: { flex: 1, alignItems: 'center' },
-  topTitle: {
-    fontFamily: 'GrowwSans-Medium',
-    fontSize: 14,
-    lineHeight: 20,
-    color: C.contentPrimary,
-  },
-  topSubtitle: {
-    fontFamily: 'GrowwSans-Regular',
-    fontSize: 12,
-    lineHeight: 18,
-    color: C.contentSecondary,
-  },
-  iconText: {
-    fontFamily: 'GrowwHugeStandard',
-    fontSize: 20,
-    color: C.contentPrimary,
-    lineHeight: 24,
-  },
+  topTitle: { fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20 },
+  topSubtitle: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18 },
+  iconText: { fontFamily: 'GrowwHugeStandard', fontSize: 20, lineHeight: 24 },
 
-  // ─── Amount Zone ───
-  amountZone: {
-    flex: 1,
-    paddingBottom: 12,
-  },
-  amountCenterWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  amountLockup: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  amountText: {
-    fontFamily: 'Sohne-Kraftig',
-    fontSize: 40,
-    lineHeight: 48,
-    color: C.contentPrimary,
-  },
-  cursor: {
-    width: 2,
-    height: 48,
-    backgroundColor: C.contentAccent,
-    marginLeft: 3,
-  },
-  toggleBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: C.bgTertiary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleIcon: {
-    fontFamily: 'GrowwHugeStandard',
-    fontSize: 12,
-    color: C.contentSecondary,
-    lineHeight: 14,
-  },
-  conversionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  conversionText: {
-    fontFamily: 'GrowwSans-Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    color: C.contentSecondary,
-  },
-  infoIcon: {
-    fontFamily: 'GrowwHugeStandard',
-    fontSize: 16,
-    color: C.contentSecondary,
-    marginLeft: 4,
-    lineHeight: 20,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pill: {
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: 99,
-    borderWidth: 1,
-    borderColor: C.border,
-    backgroundColor: C.bgPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillText: {
-    fontFamily: 'GrowwSans-Medium',
-    fontSize: 12,
-    lineHeight: 18,
-    color: C.contentPrimary,
-  },
-  receiveByText: {
-    fontFamily: 'GrowwSans-Regular',
-    fontSize: 12,
-    lineHeight: 18,
-    color: C.contentSecondary,
-    textAlign: 'center',
-  },
+  amountZone: { flex: 1, paddingBottom: 12 },
+  amountCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  amountLockup: { alignItems: 'center', gap: 12 },
+  amountRow: { flexDirection: 'row', alignItems: 'center' },
+  amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
+  cursor: { width: 2, height: 48, marginLeft: 3 },
+  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  toggleIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 12, lineHeight: 14 },
+  conversionRow: { flexDirection: 'row', alignItems: 'center' },
+  conversionText: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
+  infoIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 16, marginLeft: 4, lineHeight: 20 },
+  pillRow: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  pill: { height: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pillText: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 18 },
+  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18, textAlign: 'center' },
 
-  // ─── Payment Row ───
   paymentRow: {
-    height: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: C.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    height: 72, flexDirection: 'row', alignItems: 'center',
+    borderTopWidth: 1, borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingVertical: 12, gap: 12,
   },
-  bankLogoWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
+  bankLogoWrap: { width: 40, height: 40, borderRadius: 8, overflow: 'hidden' },
   bankLogo: { width: 40, height: 40 },
   paymentInfo: { flex: 1 },
-  paymentTitle: {
-    fontFamily: 'GrowwSans-Medium',
-    fontSize: 14,
-    lineHeight: 20,
-    color: C.contentPrimary,
-  },
-  paymentSub: {
-    fontFamily: 'GrowwSans-Regular',
-    fontSize: 12,
-    lineHeight: 18,
-    color: C.contentSecondary,
-  },
-  chevronIcon: {
-    fontFamily: 'GrowwHugeStandard',
-    fontSize: 20,
-    color: C.contentSecondary,
-    lineHeight: 24,
-  },
+  paymentTitle: { fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20 },
+  paymentSub: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18 },
+  chevronIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 20, lineHeight: 24 },
 
-  // ─── Numpad ───
-  numpad: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  numpadRow: {
-    flexDirection: 'row',
-    height: 48,
-    gap: 8,
-  },
-  numpadKey: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-  },
-  numpadDigit: {
-    fontFamily: 'Sohne-Kraftig',
-    fontSize: 28,
-    lineHeight: 36,
-    color: C.numpadText,
-    textAlign: 'center',
-  },
-  numpadIcon: {
-    fontFamily: 'GrowwHugeStandard',
-    fontSize: 26,
-    color: C.numpadText,
-    lineHeight: 32,
-  },
+  numpad: { paddingHorizontal: 16, gap: 8 },
+  numpadRow: { flexDirection: 'row', height: 48, gap: 8 },
+  numpadKey: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  numpadDigit: { fontFamily: 'Sohne-Kraftig', fontSize: 28, lineHeight: 36, textAlign: 'center' },
+  numpadIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 26, lineHeight: 32 },
 
-  // ─── CTA Dock ───
-  ctaDock: {
-    backgroundColor: C.bgPrimary,
-    borderTopWidth: 1,
-    borderColor: C.border,
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  ctaBtn: {
-    height: 48,
-    backgroundColor: C.contentAccent,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    fontFamily: 'GrowwSans-Medium',
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#FFFFFF',
-  },
+  ctaDock: { borderTopWidth: 1, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 16 },
+  ctaBtn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  ctaText: { fontFamily: 'GrowwSans-Medium', fontSize: 16, lineHeight: 24, color: '#FFFFFF' },
 
-  // ─── Home Indicator ───
-  homeIndicator: {
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.bgPrimary,
-  },
-  homeHandle: {
-    width: 108,
-    height: 2,
-    backgroundColor: C.contentSecondary,
-    borderRadius: 12,
-  },
+  homeIndicator: { height: 20, alignItems: 'center', justifyContent: 'center' },
+  homeHandle: { width: 108, height: 2, borderRadius: 12 },
 });
