@@ -15,7 +15,7 @@ import {
 
 type Currency = 'INR' | 'USD';
 type Theme = 'dark' | 'light';
-type DeviceId = 'pro17' | 'se';
+type DeviceId = 'se' | 'iphone14' | 'iphone15pro' | 'iphone16' | 'pro17';
 
 // ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
 
@@ -73,31 +73,67 @@ type DeviceConfig = {
   screenH: number;
   cornerRadius: number;
   hasDynamicIsland: boolean;
+  hasNotch: boolean;
   statusBarH: number;
   homeIndicatorH: number;
   numpadPadV: number;
 };
 
 const DEVICES: Record<DeviceId, DeviceConfig> = {
-  pro17: {
-    name: 'iPhone 17 Pro',
-    screenW: 393,
-    screenH: 852,
-    cornerRadius: 55,
-    hasDynamicIsland: true,
-    statusBarH: 59,
-    homeIndicatorH: 34,
-    numpadPadV: 16,
-  },
   se: {
     name: 'iPhone SE',
     screenW: 375,
     screenH: 667,
     cornerRadius: 22,
     hasDynamicIsland: false,
+    hasNotch: false,
     statusBarH: 44,
     homeIndicatorH: 0,
     numpadPadV: 8,
+  },
+  iphone14: {
+    name: 'iPhone 14',
+    screenW: 390,
+    screenH: 844,
+    cornerRadius: 47,
+    hasDynamicIsland: false,
+    hasNotch: true,
+    statusBarH: 47,
+    homeIndicatorH: 34,
+    numpadPadV: 14,
+  },
+  iphone15pro: {
+    name: 'iPhone 15 Pro',
+    screenW: 393,
+    screenH: 852,
+    cornerRadius: 55,
+    hasDynamicIsland: true,
+    hasNotch: false,
+    statusBarH: 59,
+    homeIndicatorH: 34,
+    numpadPadV: 16,
+  },
+  iphone16: {
+    name: 'iPhone 16',
+    screenW: 393,
+    screenH: 852,
+    cornerRadius: 55,
+    hasDynamicIsland: true,
+    hasNotch: false,
+    statusBarH: 59,
+    homeIndicatorH: 34,
+    numpadPadV: 16,
+  },
+  pro17: {
+    name: 'iPhone 17 Pro',
+    screenW: 393,
+    screenH: 852,
+    cornerRadius: 55,
+    hasDynamicIsland: true,
+    hasNotch: false,
+    statusBarH: 59,
+    homeIndicatorH: 34,
+    numpadPadV: 16,
   },
 };
 
@@ -187,6 +223,32 @@ function PhoneStatusBar({
           <View style={{
             width: 126, height: 36, backgroundColor: '#000', borderRadius: 99,
             borderWidth: 1, borderColor: 'rgba(120,120,120,0.18)',
+          }} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <SignalBars color={iconColor} />
+          <BatteryIcon color={iconColor} />
+        </View>
+      </View>
+    );
+  }
+
+  if (device.hasNotch) {
+    // iPhone 14-style: notch centered, time on left, icons on right
+    return (
+      <View style={{
+        height: device.statusBarH, backgroundColor: bgColor,
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 20, paddingTop: 14,
+      }}>
+        <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 15, lineHeight: 20, color: iconColor, letterSpacing: 0.1 }}>
+          9:41
+        </Text>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          {/* Notch */}
+          <View style={{
+            width: 130, height: 34, backgroundColor: '#000', borderBottomLeftRadius: 20, borderBottomRightRadius: 20,
+            marginTop: -14,
           }} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -298,7 +360,7 @@ const cp = StyleSheet.create({
   },
   section: { gap: 8 },
   sectionLabel: {
-    fontFamily: 'GrowwSans-Medium',
+    fontFamily: 'Sohne-Kraftig',
     fontSize: 10,
     lineHeight: 14,
     color: '#5D6668',
@@ -316,7 +378,7 @@ const cp = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   segBtnActive: { backgroundColor: '#2D3236' },
-  segBtnText: { fontFamily: 'GrowwSans-Medium', fontSize: 13, color: '#5D6668' },
+  segBtnText: { fontFamily: 'Sohne-Kraftig', fontSize: 13, color: '#5D6668' },
   segBtnTextActive: { color: '#F2F5F7' },
   deviceBtn: {
     flexDirection: 'row', alignItems: 'center',
@@ -333,9 +395,9 @@ const cp = StyleSheet.create({
     width: 8, height: 2, backgroundColor: '#3D4446', borderRadius: 1, opacity: 0.6,
   },
   phoneIconHomeActive: { backgroundColor: '#989EA0' },
-  deviceName: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 16, color: '#5D6668' },
+  deviceName: { fontFamily: 'Sohne-Kraftig', fontSize: 12, lineHeight: 16, color: '#5D6668' },
   deviceNameActive: { color: '#F2F5F7' },
-  deviceMeta: { fontFamily: 'GrowwSans-Regular', fontSize: 10, lineHeight: 14, color: '#3D4446' },
+  deviceMeta: { fontFamily: 'Sohne-Kraftig', fontSize: 10, lineHeight: 14, color: '#3D4446' },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -484,33 +546,49 @@ export default function AddMoneyScreen() {
 
   // ── Web ────────────────────────────────────────────────────────────────────
   if (IS_WEB) {
+    const artboardLabelColor = theme === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)';
     return (
-      <View style={[s.webShell, { backgroundColor: SHELL_BG[theme] }]}>
-        {/* Left control panel */}
-        <View style={{ marginRight: 28, alignSelf: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: SHELL_BG[theme] }}>
+        {/* Phone + artboard label — centered on canvas */}
+        <View style={s.webShell}>
+          <View style={{ alignItems: 'center' }}>
+            <View style={{
+              width: device.screenW,
+              height: device.screenH,
+              backgroundColor: C.bgPrimary,
+              borderRadius: device.cornerRadius,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: C.phoneBorder,
+            }}>
+              <PhoneStatusBar device={device} iconColor={iconColor} bgColor={C.bgPrimary} />
+              <View style={{ flex: 1 }}>
+                {screenContent}
+              </View>
+              <PhoneHomeIndicator device={device} color={iconColor} />
+            </View>
+            {/* Artboard label */}
+            <Text style={{
+              fontFamily: 'Sohne-Kraftig',
+              fontSize: 11,
+              lineHeight: 16,
+              color: artboardLabelColor,
+              marginTop: 10,
+              letterSpacing: 0.2,
+            }}>
+              {device.name}
+            </Text>
+          </View>
+        </View>
+
+        {/* Control panel — fixed at extreme left of viewport */}
+        <View style={{ position: 'absolute', left: 20, top: 0, bottom: 0, justifyContent: 'center' }}>
           <ControlPanel
             theme={theme}
             onTheme={setTheme}
             deviceId={deviceId}
             onDevice={setDeviceId}
           />
-        </View>
-
-        {/* Phone frame */}
-        <View style={{
-          width: device.screenW,
-          height: device.screenH,
-          backgroundColor: C.bgPrimary,
-          borderRadius: device.cornerRadius,
-          overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: C.phoneBorder,
-        }}>
-          <PhoneStatusBar device={device} iconColor={iconColor} bgColor={C.bgPrimary} />
-          <View style={{ flex: 1 }}>
-            {screenContent}
-          </View>
-          <PhoneHomeIndicator device={device} color={iconColor} />
         </View>
       </View>
     );
@@ -534,7 +612,6 @@ const s = StyleSheet.create({
 
   webShell: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
