@@ -17,7 +17,7 @@ import {
 type Currency = 'INR' | 'USD';
 type Theme = 'dark' | 'light';
 type DeviceId = 'iphone6' | 'iphone15';
-type IterationId = 'iter1';
+type IterationId = 'iter1' | 'iter2';
 
 // ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
 
@@ -143,6 +143,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
 
 const ITERATIONS: Record<IterationId, { name: string }> = {
   iter1: { name: 'Iteration 1' },
+  iter2: { name: 'Iteration 2' },
 };
 
 // ─── App Data ─────────────────────────────────────────────────────────────────
@@ -589,7 +590,7 @@ export default function AddMoneyScreen() {
   const ctaScale = useRef(new Animated.Value(1)).current;
 
   const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
-  const device = IS_WEB ? DEVICES[deviceId] : DEVICES.pro17;
+  const device = IS_WEB ? DEVICES[deviceId] : DEVICES.iphone15;
   const iconColor = (IS_WEB && theme === 'light') ? '#0D1216' : '#FFFFFF';
 
   useEffect(() => {
@@ -710,17 +711,24 @@ export default function AddMoneyScreen() {
               )}
               {!swapping && <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />}
             </View>
-            <PressableToggle
-              onPress={onToggle}
-              disabled={!!validationError}
-              toggleMarginV={device.toggleMarginV}
-            />
-            <View style={s.conversionRow}>
+            {iterationId === 'iter1' && (
+              <PressableToggle
+                onPress={onToggle}
+                disabled={!!validationError}
+                toggleMarginV={device.toggleMarginV}
+              />
+            )}
+            <View style={[s.conversionRow, { height: 32, marginTop: iterationId === 'iter2' ? device.toggleMarginV : 0 }]}>
               {validationError
                 ? <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
                 : swapping
                   ? <>
-                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>You will get </Text>
+                      {iterationId === 'iter2' && (
+                        <View style={[s.toggleBtn, { backgroundColor: C.bgTertiary, marginRight: 4 }]}>
+                          <Text style={[s.toggleIcon, { color: C.contentSecondary }]}>{IC.arrowUpDown}</Text>
+                        </View>
+                      )}
+                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>You will {iterationId === 'iter2' ? 'receive ' : 'get '}</Text>
                       <View style={{ overflow: 'hidden', height: 20 }}>
                         <Animated.View style={{ transform: [{ translateY: swapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }] }}>
                           <Text style={[s.conversionText, { color: C.contentSecondary }]}>{swapOut.convValue}</Text>
@@ -728,10 +736,22 @@ export default function AddMoneyScreen() {
                         </Animated.View>
                       </View>
                     </>
-                  : <>
-                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-                      <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
-                    </>
+                  : iterationId === 'iter2'
+                    ? <>
+                        <PressableToggle
+                          onPress={onToggle}
+                          disabled={!!validationError}
+                          toggleMarginV={0}
+                        />
+                        <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
+                        <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
+                          <Text style={[s.conversionText, { color: C.contentSecondary, textDecorationLine: 'underline' }]}>{conversionValue}</Text>
+                        </TouchableOpacity>
+                      </>
+                    : <>
+                        <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
+                        <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                      </>
               }
             </View>
             <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
