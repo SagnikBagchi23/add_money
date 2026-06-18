@@ -84,6 +84,7 @@ type DeviceConfig = {
   statusBarH: number;
   homeIndicatorH: number;
   numpadPadV: number;
+  numpadRowH: number;
   amountFontSize: number;
   amountLineHeight: number;
   lockupGap: number;
@@ -100,6 +101,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 44,
     homeIndicatorH: 0,
     numpadPadV: 8,
+    numpadRowH: 36,
     amountFontSize: 32,
     amountLineHeight: 40,
     lockupGap: 12,
@@ -114,6 +116,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 59,
     homeIndicatorH: 34,
     numpadPadV: 16,
+    numpadRowH: 48,
     amountFontSize: 40,
     amountLineHeight: 48,
     lockupGap: 24,
@@ -537,7 +540,7 @@ export default function AddMoneyScreen() {
       {/* Numpad */}
       <View style={[s.numpad, { paddingVertical: device.numpadPadV }]}>
         {NUMPAD_ROWS.map((row, ri) => (
-          <View key={ri} style={s.numpadRow}>
+          <View key={ri} style={[s.numpadRow, { height: device.numpadRowH }]}>
             {row.map((key) => (
               <TouchableOpacity
                 key={key}
