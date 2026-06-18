@@ -636,7 +636,7 @@ export default function AddMoneyScreen() {
     setSwapIn({ amount: buildDisplayAmount(newRaw, newCurrency), convValue: buildConversionValue(newRaw, newCurrency) });
     setSwapping(true);
     swapAnim.setValue(0);
-    Animated.timing(swapAnim, { toValue: 1, duration: 220, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start(() => {
+    Animated.spring(swapAnim, { toValue: 1, tension: 400, friction: 30, useNativeDriver: true }).start(() => {
       setCurrency(newCurrency);
       setRaw(newRaw);
       setShowValidation(false);
