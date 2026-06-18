@@ -298,29 +298,32 @@ function getNewCharIndices(prev: string, curr: string): Set<number> {
 
 // ─── Pressable Pill (Emil-style spring scale + pressed fill) ─────────────────
 
-function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, textColor, height, fontSize, padH }: {
+function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, textColor, height, fontSize, padH, disabled }: {
   label: string; onPress: () => void;
   borderColor: string; bgColor: string; pressedBgColor: string; textColor: string;
-  height?: number; fontSize?: number; padH?: number;
+  height?: number; fontSize?: number; padH?: number; disabled?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
   const pressIn = () => {
+    if (disabled) return;
     setPressed(true);
     Animated.spring(scale, { toValue: 0.95, tension: 400, friction: 30, useNativeDriver: true }).start();
   };
   const pressOut = () => {
+    if (disabled) return;
     setPressed(false);
     Animated.spring(scale, { toValue: 1, tension: 200, friction: 14, useNativeDriver: true }).start();
   };
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={{ transform: [{ scale }], opacity: disabled ? 0.4 : 1 }}>
       <TouchableOpacity
         style={[s.pill, { borderColor, backgroundColor: pressed ? pressedBgColor : bgColor, height: height || 32, paddingHorizontal: padH || 12 }]}
         onPress={onPress}
         onPressIn={pressIn}
         onPressOut={pressOut}
         activeOpacity={1}
+        disabled={disabled}
       >
         <Text style={[s.pillText, { color: textColor, fontSize: fontSize || 12 }]}>{label}</Text>
       </TouchableOpacity>
@@ -461,10 +464,10 @@ function PhoneStatusBar({
   );
 }
 
-function PhoneHomeIndicator({ device, color }: { device: DeviceConfig; color: string }) {
+function PhoneHomeIndicator({ device, color, bgColor }: { device: DeviceConfig; color: string; bgColor?: string }) {
   if (device.homeIndicatorH === 0) return null;
   return (
-    <View style={{ height: device.homeIndicatorH, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8 }}>
+    <View style={{ height: device.homeIndicatorH, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8, backgroundColor: bgColor || 'transparent' }}>
       <View style={{ width: 134, height: 5, backgroundColor: color, opacity: 0.28, borderRadius: 99 }} />
     </View>
   );
@@ -618,6 +621,8 @@ export default function AddMoneyScreen() {
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
+  const sheetOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(400)).current;
   const prevDisplayRef = useRef('');
   const prevRawRef = useRef('');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
@@ -665,6 +670,31 @@ export default function AddMoneyScreen() {
     [raw]
   );
 
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetCurrency, setSheetCurrency] = useState<Currency>('INR');
+
+  const openSheet = useCallback(() => {
+    setSheetCurrency('INR');
+    setSheetVisible(true);
+    setShowSheet(true);
+    sheetOverlayOpacity.setValue(0);
+    sheetTranslateY.setValue(400);
+    Animated.parallel([
+      Animated.timing(sheetOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(sheetTranslateY, { toValue: 0, tension: 65, friction: 11, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const closeSheet = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(sheetOverlayOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(sheetTranslateY, { toValue: 400, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }),
+    ]).start(() => {
+      setSheetVisible(false);
+      setShowSheet(false);
+    });
+  }, []);
+
   const onToggle = () => {
     if (validationError) return;
     const newCurrency: Currency = currency === 'INR' ? 'USD' : 'INR';
@@ -686,6 +716,8 @@ export default function AddMoneyScreen() {
   const numericValue = parseFloat(raw || '0');
   const inrEquivalent = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
   const ctaEnabled = inrEquivalent >= MIN_INR;
+  const maxValue = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
+  const isMaxed = raw === String(maxValue);
 
   const screenContent = (
     <>
@@ -711,7 +743,7 @@ export default function AddMoneyScreen() {
       <View style={s.amountZone}>
         <View style={s.amountCenterWrap}>
           {iterationId === 'iter3' ? (
-            <View style={[s.amountLockup, { gap: 0, marginTop: device.lockupMarginTop, width: '100%', paddingHorizontal: 16 }]}>
+            <View style={[s.amountLockup, { gap: 8, marginTop: device.lockupMarginTop, width: '100%', paddingHorizontal: 16 }]}>
               {/* Output card — conversion amount */}
               <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
                 <View style={s.fieldCardRow}>
@@ -721,18 +753,8 @@ export default function AddMoneyScreen() {
                 </View>
               </View>
 
-              {/* Floating toggle at intersection */}
-              <View style={{ alignItems: 'center', marginVertical: -12, zIndex: 1 }}>
-                <PressableToggle
-                  onPress={onToggle}
-                  disabled={!!validationError}
-                  toggleMarginV={0}
-                  colors={C}
-                />
-              </View>
-
-              {/* Input card — amount entry */}
-              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
+              {/* Input card — amount entry (selected) */}
+              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.contentSecondary }]}>
                 <View style={s.fieldCardRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     {displayAmount.split('').map((ch, i) =>
@@ -770,7 +792,7 @@ export default function AddMoneyScreen() {
                 </View>
               )}
 
-              <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
+              <View style={[s.pillRow, { marginTop: device.pillTopGap + 16 }]}>
                 {pills.map(({ label, value }) => (
                   <PressablePill
                     key={label}
@@ -782,6 +804,7 @@ export default function AddMoneyScreen() {
                     height={device.pillHeight}
                     fontSize={device.pillFontSize}
                     padH={device.pillPadH}
+                    disabled={isMaxed}
                     onPress={() => {
                       const [intStr = '0', decStr] = (raw || '0').split('.');
                       const newInt = parseInt(intStr, 10) + parseInt(value, 10);
@@ -829,7 +852,7 @@ export default function AddMoneyScreen() {
                         colors={C}
                       />
                       <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
-                      <TouchableOpacity activeOpacity={0.7} disabled={!!validationError} onPress={() => setShowSheet(true)}>
+                      <TouchableOpacity activeOpacity={0.7} disabled={!!validationError} onPress={openSheet}>
                         <View style={{ paddingBottom: 1, borderBottomWidth: 1, borderBottomColor: C.contentSecondary, borderStyle: 'dashed' }}>
                           <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionValue}</Text>
                         </View>
@@ -837,7 +860,7 @@ export default function AddMoneyScreen() {
                     </>
                   : <>
                       <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-                      <TouchableOpacity onPress={() => setShowSheet(true)} activeOpacity={0.7}>
+                      <TouchableOpacity onPress={openSheet} activeOpacity={0.7}>
                         <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
                       </TouchableOpacity>
                     </>
@@ -924,64 +947,109 @@ export default function AddMoneyScreen() {
         </Animated.View>
       </View>
 
-      {/* Bottom Sheet Overlay */}
-      {showSheet && (
-        <TouchableOpacity
-          style={s.sheetOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSheet(false)}
-        >
-          <TouchableOpacity activeOpacity={1} style={[s.sheetContainer, { backgroundColor: C.bgSurfaceZ1 }]}>
-            <View style={s.sheetTitleFrame}>
-              <Text style={[s.sheetTitle, { color: C.contentPrimary }]}>How was this calculated?</Text>
-              <Text style={[s.sheetSubtitle, { color: C.contentSecondary }]}>
-                $1 = ₹{EXCHANGE_RATE.toFixed(4)}. Rates will refresh in 29:49
-              </Text>
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
-              <View style={[s.sheetCard, { backgroundColor: C.bgSurfaceZ2, borderColor: C.borderOnSurfaceZ1 }]}>
-                <View style={s.sheetRow}>
-                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>You are transferring</Text>
-                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
-                    {currency === 'INR' ? displayAmount : `₹${(numericValue * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  </Text>
-                </View>
-                <View style={s.sheetRow}>
-                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Charges</Text>
-                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>₹45</Text>
-                </View>
-                <View style={[s.sheetDivider, { backgroundColor: C.borderOnSurfaceZ1 }]} />
-                <View style={s.sheetRow}>
-                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Amount to be credited</Text>
-                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
-                    {(() => {
-                      const inrVal = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
-                      const credited = Math.max(0, inrVal - 45);
-                      return `₹${credited.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-                    })()}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-              <Text style={[s.sheetDisclaimer, { color: C.contentSecondary }]}>
-                GST and forex rate is indicative and can vary slightly once order is confirmed. TCS, if applicable, will be charged on the amount you are transferring.
-              </Text>
-            </View>
-            <View style={[s.ctaDock, { paddingBottom: 16 }]}>
-              <TouchableOpacity
-                style={[s.ctaBtn, { backgroundColor: C.contentAccent }]}
-                onPress={() => setShowSheet(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.ctaText, { color: C.contentOnColour }]}>Okay</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      )}
     </>
   );
+
+  const sheetContent = sheetVisible ? (
+    <View style={s.sheetOverlay}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)', opacity: sheetOverlayOpacity }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeSheet} />
+      </Animated.View>
+      <Animated.View style={[s.sheetContainer, { backgroundColor: C.bgSurfaceZ1, transform: [{ translateY: sheetTranslateY }] }]}>
+        <TouchableOpacity activeOpacity={1}>
+        <View style={s.sheetTitleFrame}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.sheetTitle, { color: C.contentPrimary }]}>How was this calculated?</Text>
+            </View>
+            {iterationId === 'iter1' && (
+              <View style={{ flexDirection: 'row', backgroundColor: C.bgTertiary, borderRadius: 8, padding: 2, marginLeft: 12, marginTop: 2 }}>
+                {(['INR', 'USD'] as Currency[]).map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={{
+                      paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6,
+                      backgroundColor: sheetCurrency === c ? C.bgSurfaceZ1 : 'transparent',
+                    }}
+                    onPress={() => setSheetCurrency(c)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 18, color: sheetCurrency === c ? C.contentPrimary : C.contentSecondary }}>
+                      {c === 'INR' ? '₹' : '$'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          <Text style={[s.sheetSubtitle, { color: C.contentSecondary }]}>
+            $1 = ₹{EXCHANGE_RATE.toFixed(4)}. Rates will refresh in 29:49
+          </Text>
+        </View>
+        <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
+          <View style={[s.sheetCard, { backgroundColor: C.bgSurfaceZ2, borderColor: C.borderOnSurfaceZ1 }]}>
+            {(() => {
+              const inrVal = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
+              const usdVal = currency === 'USD' ? numericValue : numericValue / EXCHANGE_RATE;
+              const showInr = iterationId === 'iter1' ? sheetCurrency === 'INR' : true;
+              const transferringText = showInr
+                ? `₹${inrVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+                : `$${usdVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              const chargesText = showInr ? '₹45' : `$${(45 / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              const creditedInr = Math.max(0, inrVal - 45);
+              const creditedUsd = Math.max(0, creditedInr / EXCHANGE_RATE);
+              const creditedText = showInr
+                ? `₹${creditedInr.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+                : `$${creditedUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              return (
+                <>
+                  <View style={s.sheetRow}>
+                    <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>You are transferring</Text>
+                    <Text style={[s.sheetValue, { color: C.contentPrimary }]}>{transferringText}</Text>
+                  </View>
+                  <View style={s.sheetRow}>
+                    <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Charges</Text>
+                    <Text style={[s.sheetValue, { color: C.contentPrimary }]}>{chargesText}</Text>
+                  </View>
+                  <View style={[s.sheetDivider, { backgroundColor: C.borderOnSurfaceZ1 }]} />
+                  <View style={s.sheetRow}>
+                    <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Amount to be credited</Text>
+                    {iterationId === 'iter2' ? (
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
+                          {`₹${creditedInr.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                        </Text>
+                        <Text style={{ fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18, color: C.contentSecondary }}>
+                          {`$${creditedUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={[s.sheetValue, { color: C.contentPrimary }]}>{creditedText}</Text>
+                    )}
+                  </View>
+                </>
+              );
+            })()}
+          </View>
+        </View>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Text style={[s.sheetDisclaimer, { color: C.contentSecondary }]}>
+            GST and forex rate is indicative and can vary slightly once order is confirmed. TCS, if applicable, will be charged on the amount you are transferring.
+          </Text>
+        </View>
+        <View style={[s.ctaDock, { paddingBottom: 16 }]}>
+          <TouchableOpacity
+            style={[s.ctaBtn, { backgroundColor: C.contentAccent }]}
+            onPress={closeSheet}
+            activeOpacity={0.8}
+          >
+            <Text style={[s.ctaText, { color: C.contentOnColour }]}>Okay</Text>
+          </TouchableOpacity>
+        </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  ) : null;
 
   // ── Web ────────────────────────────────────────────────────────────────────
   if (IS_WEB) {
@@ -1004,7 +1072,8 @@ export default function AddMoneyScreen() {
               <View style={{ flex: 1 }}>
                 {screenContent}
               </View>
-              <PhoneHomeIndicator device={device} color={iconColor} />
+              <PhoneHomeIndicator device={device} color={iconColor} bgColor={sheetVisible ? C.bgSurfaceZ1 : undefined} />
+              {sheetContent}
             </View>
             {/* Artboard label */}
             <Text style={{
@@ -1042,6 +1111,7 @@ export default function AddMoneyScreen() {
       <View style={s.homeIndicator}>
         <View style={[s.homeHandle, { backgroundColor: THEME_COLORS.dark.contentSecondary }]} />
       </View>
+      {sheetContent}
     </SafeAreaView>
   );
 }
@@ -1111,7 +1181,7 @@ const s = StyleSheet.create({
 
   sheetOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
+    justifyContent: 'flex-end',
   },
   sheetContainer: {
     borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: 'hidden',
