@@ -457,6 +457,11 @@ export default function AddMoneyScreen() {
   const conversionText = buildConversion(raw, currency);
   const pills = PILLS[currency];
 
+  const MIN_USD = 100;
+  const numericValue = parseFloat(raw || '0');
+  const usdEquivalent = currency === 'USD' ? numericValue : numericValue / EXCHANGE_RATE;
+  const ctaEnabled = usdEquivalent >= MIN_USD;
+
   const screenContent = (
     <>
       <StatusBar barStyle="light-content" backgroundColor={C.bgPrimary} />
@@ -546,7 +551,11 @@ export default function AddMoneyScreen() {
 
       {/* CTA Dock */}
       <View style={[s.ctaDock, { backgroundColor: C.bgPrimary, borderColor: C.border }]}>
-        <TouchableOpacity style={[s.ctaBtn, { backgroundColor: C.contentAccent }]} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[s.ctaBtn, { backgroundColor: C.contentAccent, opacity: ctaEnabled ? 1 : 0.38 }]}
+          activeOpacity={0.85}
+          disabled={!ctaEnabled}
+        >
           <Text style={s.ctaText}>Add money</Text>
         </TouchableOpacity>
       </View>
