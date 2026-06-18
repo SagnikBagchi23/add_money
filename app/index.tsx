@@ -634,7 +634,7 @@ const s = StyleSheet.create({
   topSubtitle: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18 },
   iconText: { fontFamily: 'GrowwHugeStandard', fontSize: 20, lineHeight: 24 },
 
-  amountZone: { flex: 1, paddingBottom: 12 },
+  amountZone: { flex: 1, paddingBottom: 8 },
   amountCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   amountLockup: { alignItems: 'center', gap: 12 },
   amountRow: { flexDirection: 'row', alignItems: 'center' },
