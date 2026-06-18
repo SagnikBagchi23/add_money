@@ -708,7 +708,9 @@ export default function AddMoneyScreen() {
                       />
                       <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
                       <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
-                        <Text style={[s.conversionText, { color: C.contentSecondary, textDecorationLine: 'underline' }]}>{conversionValue}</Text>
+                        <View style={{ paddingBottom: 1, borderBottomWidth: 1, borderBottomColor: C.contentSecondary, borderStyle: 'dashed' }}>
+                          <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionValue}</Text>
+                        </View>
                       </TouchableOpacity>
                     </>
                   : <>
