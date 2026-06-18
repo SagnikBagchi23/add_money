@@ -38,6 +38,7 @@ type ColorSet = {
   contentPrimary: string;
   contentSecondary: string;
   contentAccent: string;
+  contentNegative: string;
   contentDisabled: string;
   numpadText: string;
   phoneBorder: string;
@@ -52,6 +53,7 @@ const THEME_COLORS: Record<Theme, ColorSet> = {
     contentPrimary:   '#F2F5F7',
     contentSecondary: '#989EA0',
     contentAccent:    '#04B488',
+    contentNegative:  '#F04B4B',
     contentDisabled:  '#44494B',
     numpadText:       '#EAEFF1',
     phoneBorder:      'rgba(255,255,255,0.13)',
@@ -64,6 +66,7 @@ const THEME_COLORS: Record<Theme, ColorSet> = {
     contentPrimary:   '#0D1216',
     contentSecondary: '#5D6668',
     contentAccent:    '#00A377',
+    contentNegative:  '#D12C2C',
     contentDisabled:  '#BABBBC',
     numpadText:       '#0D1216',
     phoneBorder:      'rgba(0,0,0,0.14)',
@@ -142,6 +145,7 @@ const ITERATIONS: Record<IterationId, { name: string }> = {
 
 const EXCHANGE_RATE = 96.71;
 const AVAILABLE_INR = 143250; // random value above 1L
+const MIN_INR = 10000;
 
 const NUMPAD_ROWS = [
   ['1', '2', '3'],
@@ -179,6 +183,21 @@ function buildConversion(raw: string, currency: Currency): string {
     return `You will get $${(num / EXCHANGE_RATE).toFixed(2)}`;
   }
   return `You will get ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+// Only shows an error once the user has committed to their integer part (typed a decimal).
+// Before the decimal, any partial number can still grow to reach the minimum.
+function getValidationError(raw: string, currency: Currency): string | null {
+  if (!raw || !raw.includes('.')) return null;
+  const num = parseFloat(raw);
+  if (!num) return null;
+  const inrValue = currency === 'INR' ? num : num * EXCHANGE_RATE;
+  if (inrValue < MIN_INR) {
+    return currency === 'INR'
+      ? `Minimum ₹${MIN_INR.toLocaleString('en-IN')}`
+      : `Minimum $${(MIN_INR / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return null;
 }
 
 // ─── Status Bar Icon Sub-Components ──────────────────────────────────────────
@@ -474,12 +493,12 @@ export default function AddMoneyScreen() {
 
   const displayAmount = buildDisplayAmount(raw, currency);
   const conversionText = buildConversion(raw, currency);
+  const validationError = getValidationError(raw, currency);
   const pills = PILLS[currency];
 
-  const MIN_USD = 100;
   const numericValue = parseFloat(raw || '0');
-  const usdEquivalent = currency === 'USD' ? numericValue : numericValue / EXCHANGE_RATE;
-  const ctaEnabled = usdEquivalent >= MIN_USD;
+  const inrEquivalent = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
+  const ctaEnabled = inrEquivalent >= MIN_INR;
 
   const screenContent = (
     <>
@@ -517,8 +536,13 @@ export default function AddMoneyScreen() {
               <Text style={[s.toggleIcon, { color: C.contentSecondary }]}>{IC.arrowUpDown}</Text>
             </TouchableOpacity>
             <View style={s.conversionRow}>
-              <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-              <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+              {validationError
+                ? <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
+                : <>
+                    <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
+                    <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                  </>
+              }
             </View>
             <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
               {pills.map(({ label, value }) => (
