@@ -583,10 +583,6 @@ export default function AddMoneyScreen() {
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
   const prevDisplayRef = useRef('');
-  const [swapping, setSwapping] = useState(false);
-  const [swapOut, setSwapOut] = useState({ amount: '', convValue: '' });
-  const [swapIn, setSwapIn] = useState({ amount: '', convValue: '' });
-  const swapAnim = useRef(new Animated.Value(0)).current;
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   const ctaScale = useRef(new Animated.Value(1)).current;
 
@@ -633,17 +629,9 @@ export default function AddMoneyScreen() {
     if (validationError) return;
     const newCurrency: Currency = currency === 'INR' ? 'USD' : 'INR';
     const newRaw = computeToggleRaw(raw, currency);
-    if (!raw) { setCurrency(newCurrency); return; }
-    setSwapOut({ amount: displayAmount, convValue: conversionValue });
-    setSwapIn({ amount: buildDisplayAmount(newRaw, newCurrency), convValue: buildConversionValue(newRaw, newCurrency) });
-    setSwapping(true);
-    swapAnim.setValue(0);
-    Animated.spring(swapAnim, { toValue: 1, tension: 400, friction: 30, useNativeDriver: true }).start(() => {
-      setCurrency(newCurrency);
-      setRaw(newRaw);
-      setShowValidation(false);
-      setSwapping(false);
-    });
+    setCurrency(newCurrency);
+    setRaw(newRaw);
+    setShowValidation(false);
   };
 
   const displayAmount = buildDisplayAmount(raw, currency);
@@ -684,33 +672,20 @@ export default function AddMoneyScreen() {
         <View style={s.amountCenterWrap}>
           <View style={[s.amountLockup, { gap: device.lockupGap, marginTop: device.lockupMarginTop }]}>
             <View style={s.amountRow}>
-              {swapping ? (
-                <View style={{ overflow: 'hidden', height: device.amountLineHeight }}>
-                  <Animated.View style={{ transform: [{ translateY: swapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -device.amountLineHeight] }) }] }}>
-                    <View style={{ height: device.amountLineHeight, flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{swapOut.amount}</Text>
-                    </View>
-                    <View style={{ height: device.amountLineHeight, flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{swapIn.amount}</Text>
-                    </View>
-                  </Animated.View>
-                </View>
-              ) : (
-                displayAmount.split('').map((ch, i) =>
-                  newCharIndices.has(i) ? (
-                    <AmountChar
-                      key={`${i}-${ch}-a`}
-                      ch={ch}
-                      color={C.contentPrimary}
-                      fontSize={device.amountFontSize}
-                      lineHeight={device.amountLineHeight}
-                    />
-                  ) : (
-                    <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{ch}</Text>
-                  )
+              {displayAmount.split('').map((ch, i) =>
+                newCharIndices.has(i) ? (
+                  <AmountChar
+                    key={`${i}-${ch}-a`}
+                    ch={ch}
+                    color={C.contentPrimary}
+                    fontSize={device.amountFontSize}
+                    lineHeight={device.amountLineHeight}
+                  />
+                ) : (
+                  <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{ch}</Text>
                 )
               )}
-              {!swapping && <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />}
+              <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />
             </View>
             {iterationId === 'iter1' && (
               <PressableToggle
@@ -723,38 +698,23 @@ export default function AddMoneyScreen() {
             <View style={[s.conversionRow, { height: 32, marginTop: iterationId === 'iter2' ? device.toggleMarginV : 0 }]}>
               {validationError
                 ? <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
-                : swapping
+                : iterationId === 'iter2'
                   ? <>
-                      {iterationId === 'iter2' && (
-                        <View style={[s.toggleBtn, { backgroundColor: C.bgTertiary, marginRight: 4 }]}>
-                          <Text style={[s.toggleIcon, { color: C.contentSecondary }]}>{IC.arrowUpDown}</Text>
-                        </View>
-                      )}
-                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>You will {iterationId === 'iter2' ? 'receive ' : 'get '}</Text>
-                      <View style={{ overflow: 'hidden', height: 20 }}>
-                        <Animated.View style={{ transform: [{ translateY: swapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }] }}>
-                          <Text style={[s.conversionText, { color: C.contentSecondary }]}>{swapOut.convValue}</Text>
-                          <Text style={[s.conversionText, { color: C.contentSecondary }]}>{swapIn.convValue}</Text>
-                        </Animated.View>
-                      </View>
+                      <PressableToggle
+                        onPress={onToggle}
+                        disabled={!!validationError}
+                        toggleMarginV={0}
+                        colors={C}
+                      />
+                      <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
+                      <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
+                        <Text style={[s.conversionText, { color: C.contentSecondary, textDecorationLine: 'underline' }]}>{conversionValue}</Text>
+                      </TouchableOpacity>
                     </>
-                  : iterationId === 'iter2'
-                    ? <>
-                        <PressableToggle
-                          onPress={onToggle}
-                          disabled={!!validationError}
-                          toggleMarginV={0}
-                          colors={C}
-                        />
-                        <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
-                        <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
-                          <Text style={[s.conversionText, { color: C.contentSecondary, textDecorationLine: 'underline' }]}>{conversionValue}</Text>
-                        </TouchableOpacity>
-                      </>
-                    : <>
-                        <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-                        <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
-                      </>
+                  : <>
+                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
+                      <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                    </>
               }
             </View>
             <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
