@@ -666,7 +666,7 @@ const s = StyleSheet.create({
 
   amountZone: { flex: 1 },
   amountCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  amountLockup: { alignItems: 'center', gap: 12, marginTop: -16 },
+  amountLockup: { alignItems: 'center', gap: 12, marginTop: -32 },
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
   cursor: { width: 2, height: 48, marginLeft: 3 },
