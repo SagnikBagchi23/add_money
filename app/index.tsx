@@ -511,7 +511,11 @@ export default function AddMoneyScreen() {
                 <TouchableOpacity
                   key={label}
                   style={[s.pill, { borderColor: C.border, backgroundColor: C.bgPrimary }]}
-                  onPress={() => setRaw(value)}
+                  onPress={() => {
+                    const [intStr = '0', decStr] = (raw || '0').split('.');
+                    const newInt = parseInt(intStr, 10) + parseInt(value, 10);
+                    setRaw(decStr !== undefined ? `${newInt}.${decStr}` : String(newInt));
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text style={[s.pillText, { color: C.contentPrimary }]}>{label}</Text>
