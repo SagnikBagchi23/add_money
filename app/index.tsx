@@ -229,7 +229,7 @@ function AmountChar({ ch, color, fontSize, lineHeight }: {
   useEffect(() => {
     const a = Animated.timing(anim, {
       toValue: 1,
-      duration: 120,
+      duration: 80,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
     });
