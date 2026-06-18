@@ -86,6 +86,8 @@ type DeviceConfig = {
   numpadPadV: number;
   numpadRowH: number;
   toggleMarginV: number;
+  pillTopGap: number;
+  ctaPaddingBottom: number;
   amountFontSize: number;
   amountLineHeight: number;
   lockupGap: number;
@@ -102,8 +104,10 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 44,
     homeIndicatorH: 0,
     numpadPadV: 8,
-    numpadRowH: 36,
+    numpadRowH: 40,
     toggleMarginV: -4,
+    pillTopGap: 8,
+    ctaPaddingBottom: 8,
     amountFontSize: 32,
     amountLineHeight: 40,
     lockupGap: 12,
@@ -120,6 +124,8 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 16,
     numpadRowH: 48,
     toggleMarginV: -8,
+    pillTopGap: 0,
+    ctaPaddingBottom: 0,
     amountFontSize: 40,
     amountLineHeight: 48,
     lockupGap: 24,
@@ -514,7 +520,7 @@ export default function AddMoneyScreen() {
               <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
               <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
             </View>
-            <View style={s.pillRow}>
+            <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
               {pills.map(({ label, value }) => (
                 <TouchableOpacity
                   key={label}
@@ -571,7 +577,7 @@ export default function AddMoneyScreen() {
       </View>
 
       {/* CTA Dock */}
-      <View style={s.ctaDock}>
+      <View style={[s.ctaDock, { paddingBottom: device.ctaPaddingBottom }]}>
         <TouchableOpacity
           style={[s.ctaBtn, { backgroundColor: ctaEnabled ? C.contentAccent : C.bgDisabled }]}
           activeOpacity={0.85}
