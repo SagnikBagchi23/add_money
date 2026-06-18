@@ -622,7 +622,7 @@ export default function AddMoneyScreen() {
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
-  const [iter3ActiveField, setIter3ActiveField] = useState<'top' | 'bottom'>('bottom');
+  const [iter3ActiveField, setIter3ActiveField] = useState<'top' | 'bottom'>('top');
   const sheetOverlayOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(400)).current;
   const prevDisplayRef = useRef('');
@@ -766,11 +766,11 @@ export default function AddMoneyScreen() {
                   </View>
                 </View>
               ) : (
-                <TouchableOpacity activeOpacity={0.8} onPress={() => { onToggle(); setIter3ActiveField('top'); }}>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { if (currency !== 'INR') onToggle(); setIter3ActiveField('top'); }}>
                   <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
                     <View style={s.fieldCardRow}>
                       <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
-                        {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
+                        {conversionValue || '₹0'}
                       </Text>
                       <TouchableOpacity onPress={openSheet} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Text style={{ fontFamily: 'GrowwHugeStandard', fontSize: 16, lineHeight: 20, color: C.contentSecondary }}>{IC.infoCircle}</Text>
@@ -800,11 +800,11 @@ export default function AddMoneyScreen() {
                   </View>
                 </View>
               ) : (
-                <TouchableOpacity activeOpacity={0.8} onPress={() => { onToggle(); setIter3ActiveField('bottom'); }}>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { if (currency !== 'USD') onToggle(); setIter3ActiveField('bottom'); }}>
                   <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
                     <View style={s.fieldCardRow}>
                       <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
-                        {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
+                        {conversionValue || '$0'}
                       </Text>
                       <TouchableOpacity onPress={openSheet} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Text style={{ fontFamily: 'GrowwHugeStandard', fontSize: 16, lineHeight: 20, color: C.contentSecondary }}>{IC.infoCircle}</Text>
