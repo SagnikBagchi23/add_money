@@ -619,6 +619,7 @@ export default function AddMoneyScreen() {
   const [showValidation, setShowValidation] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const prevDisplayRef = useRef('');
+  const prevRawRef = useRef('');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   const ctaScale = useRef(new Animated.Value(1)).current;
 
@@ -638,10 +639,13 @@ export default function AddMoneyScreen() {
   }, []);
 
   useEffect(() => {
-    if (!raw) { setShowValidation(false); return; }
-    if (showValidation) return; // already committed — backspace won't reset it
-    if (raw.includes('.')) { setShowValidation(true); return; }
-    const t = setTimeout(() => setShowValidation(true), 2000);
+    if (!raw) { setShowValidation(false); prevRawRef.current = raw; return; }
+    if (showValidation) { prevRawRef.current = raw; return; }
+    if (raw.includes('.')) { setShowValidation(true); prevRawRef.current = raw; return; }
+    const isDeleting = raw.length < prevRawRef.current.length;
+    prevRawRef.current = raw;
+    if (isDeleting) { setShowValidation(true); return; }
+    const t = setTimeout(() => setShowValidation(true), 1000);
     return () => clearTimeout(t);
   }, [raw, showValidation]);
 
