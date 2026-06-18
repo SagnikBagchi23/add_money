@@ -162,7 +162,8 @@ function buildDisplayAmount(raw: string, currency: Currency): string {
   const sym = currency === 'INR' ? '₹' : '$';
   if (!raw) return sym;
   const [intStr, decStr] = raw.split('.');
-  const intFormatted = parseInt(intStr || '0', 10).toLocaleString('en-US');
+  const locale = currency === 'INR' ? 'en-IN' : 'en-US';
+  const intFormatted = parseInt(intStr || '0', 10).toLocaleString(locale);
   if (decStr !== undefined) return `${sym}${intFormatted}.${decStr}`;
   return `${sym}${intFormatted}`;
 }
@@ -172,7 +173,7 @@ function buildConversion(raw: string, currency: Currency): string {
   if (currency === 'INR') {
     return `You will get $${(num / EXCHANGE_RATE).toFixed(2)}`;
   }
-  return `= ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  return `You will get ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
 // ─── Status Bar Icon Sub-Components ──────────────────────────────────────────
