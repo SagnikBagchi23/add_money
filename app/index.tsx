@@ -17,7 +17,7 @@ import {
 type Currency = 'INR' | 'USD';
 type Theme = 'dark' | 'light';
 type DeviceId = 'iphone6' | 'iphone15';
-type IterationId = 'iter1' | 'iter2';
+type IterationId = 'iter1' | 'iter2' | 'iter3';
 
 // ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
 
@@ -35,12 +35,16 @@ type ColorSet = {
   bgPrimary: string;
   bgTertiary: string;
   bgDisabled: string;
+  bgSurfaceZ1: string;
+  bgSurfaceZ2: string;
   border: string;
+  borderOnSurfaceZ1: string;
   contentPrimary: string;
   contentSecondary: string;
   contentAccent: string;
   contentNegative: string;
   contentDisabled: string;
+  contentOnColour: string;
   numpadText: string;
   phoneBorder: string;
 };
@@ -50,12 +54,16 @@ const THEME_COLORS: Record<Theme, ColorSet> = {
     bgPrimary:        '#060809',
     bgTertiary:       '#1E2224',
     bgDisabled:       '#151819',
+    bgSurfaceZ1:      '#151819',
+    bgSurfaceZ2:      '#1E2224',
     border:           '#252A2C',
+    borderOnSurfaceZ1:'#2D3133',
     contentPrimary:   '#F2F5F7',
     contentSecondary: '#989EA0',
     contentAccent:    '#04B488',
     contentNegative:  '#F04B4B',
     contentDisabled:  '#44494B',
+    contentOnColour:  '#F2F5F7',
     numpadText:       '#EAEFF1',
     phoneBorder:      'rgba(255,255,255,0.13)',
   },
@@ -63,12 +71,16 @@ const THEME_COLORS: Record<Theme, ColorSet> = {
     bgPrimary:        '#FFFFFF',
     bgTertiary:       '#F2F5F7',
     bgDisabled:       '#F7F7F7',
+    bgSurfaceZ1:      '#FFFFFF',
+    bgSurfaceZ2:      '#FFFFFF',
     border:           '#DDE1E4',
+    borderOnSurfaceZ1:'#E7E8E9',
     contentPrimary:   '#0D1216',
     contentSecondary: '#5D6668',
     contentAccent:    '#00A377',
     contentNegative:  '#D12C2C',
     contentDisabled:  '#BABBBC',
+    contentOnColour:  '#FFFFFF',
     numpadText:       '#0D1216',
     phoneBorder:      'rgba(0,0,0,0.14)',
   },
@@ -96,6 +108,13 @@ type DeviceConfig = {
   amountLineHeight: number;
   lockupGap: number;
   lockupMarginTop: number;
+  pillHeight: number;
+  pillFontSize: number;
+  pillPadH: number;
+  iter3InputFontSize: number;
+  iter3InputLineHeight: number;
+  iter3OutputFontSize: number;
+  iter3OutputLineHeight: number;
 };
 
 const DEVICES: Record<DeviceId, DeviceConfig> = {
@@ -111,12 +130,19 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 8,
     numpadRowH: 40,
     toggleMarginV: -4,
-    pillTopGap: 16,
+    pillTopGap: 8,
     ctaPaddingBottom: 8,
     amountFontSize: 32,
     amountLineHeight: 40,
     lockupGap: 12,
     lockupMarginTop: -24,
+    pillHeight: 28,
+    pillFontSize: 11,
+    pillPadH: 10,
+    iter3InputFontSize: 24,
+    iter3InputLineHeight: 32,
+    iter3OutputFontSize: 18,
+    iter3OutputLineHeight: 24,
   },
   iphone15: {
     name: 'iPhone 15',
@@ -130,12 +156,19 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 16,
     numpadRowH: 48,
     toggleMarginV: -8,
-    pillTopGap: 16,
+    pillTopGap: 4,
     ctaPaddingBottom: 0,
     amountFontSize: 40,
     amountLineHeight: 48,
     lockupGap: 24,
     lockupMarginTop: -40,
+    pillHeight: 32,
+    pillFontSize: 12,
+    pillPadH: 12,
+    iter3InputFontSize: 28,
+    iter3InputLineHeight: 36,
+    iter3OutputFontSize: 20,
+    iter3OutputLineHeight: 28,
   },
 };
 
@@ -144,6 +177,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
 const ITERATIONS: Record<IterationId, { name: string }> = {
   iter1: { name: 'Iteration 1' },
   iter2: { name: 'Iteration 2' },
+  iter3: { name: 'Iteration 3' },
 };
 
 // ─── App Data ─────────────────────────────────────────────────────────────────
@@ -264,9 +298,10 @@ function getNewCharIndices(prev: string, curr: string): Set<number> {
 
 // ─── Pressable Pill (Emil-style spring scale + pressed fill) ─────────────────
 
-function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, textColor }: {
+function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, textColor, height, fontSize, padH }: {
   label: string; onPress: () => void;
   borderColor: string; bgColor: string; pressedBgColor: string; textColor: string;
+  height?: number; fontSize?: number; padH?: number;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
@@ -281,13 +316,13 @@ function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, t
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
-        style={[s.pill, { borderColor, backgroundColor: pressed ? pressedBgColor : bgColor }]}
+        style={[s.pill, { borderColor, backgroundColor: pressed ? pressedBgColor : bgColor, height: height || 32, paddingHorizontal: padH || 12 }]}
         onPress={onPress}
         onPressIn={pressIn}
         onPressOut={pressOut}
         activeOpacity={1}
       >
-        <Text style={[s.pillText, { color: textColor }]}>{label}</Text>
+        <Text style={[s.pillText, { color: textColor, fontSize: fontSize || 12 }]}>{label}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -582,6 +617,7 @@ export default function AddMoneyScreen() {
   const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const prevDisplayRef = useRef('');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
   const ctaScale = useRef(new Animated.Value(1)).current;
@@ -670,6 +706,96 @@ export default function AddMoneyScreen() {
       {/* Amount Zone */}
       <View style={s.amountZone}>
         <View style={s.amountCenterWrap}>
+          {iterationId === 'iter3' ? (
+            <View style={[s.amountLockup, { gap: 0, marginTop: device.lockupMarginTop, width: '100%', paddingHorizontal: 16 }]}>
+              {/* Output card — conversion amount */}
+              <View style={[s.fieldCard, { backgroundColor: C.bgTertiary }]}>
+                <View style={s.fieldCardRow}>
+                  <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3OutputFontSize, lineHeight: device.iter3OutputLineHeight, color: C.contentPrimary, flex: 1 }}>
+                    {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
+                  </Text>
+                  <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20, color: C.contentSecondary }}>
+                    {currency === 'INR' ? 'USD' : 'INR'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Floating toggle between cards */}
+              <View style={{ alignItems: 'flex-end', marginVertical: -12, zIndex: 1, paddingRight: 20 }}>
+                <PressableToggle
+                  onPress={onToggle}
+                  disabled={!!validationError}
+                  toggleMarginV={0}
+                  colors={C}
+                />
+              </View>
+
+              {/* Input card — amount entry */}
+              <View style={[s.fieldCard, { backgroundColor: C.bgTertiary }]}>
+                <View style={s.fieldCardRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    {displayAmount.split('').map((ch, i) =>
+                      newCharIndices.has(i) ? (
+                        <AmountChar
+                          key={`${i}-${ch}-a`}
+                          ch={ch}
+                          color={C.contentPrimary}
+                          fontSize={device.iter3InputFontSize}
+                          lineHeight={device.iter3InputLineHeight}
+                        />
+                      ) : (
+                        <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary }}>{ch}</Text>
+                      )
+                    )}
+                    <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.iter3InputLineHeight }]} />
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[s.maxPill, { borderColor: C.border }]}
+                      onPress={() => {
+                        const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
+                        setRaw(String(maxVal));
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
+                    </TouchableOpacity>
+                    <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20, color: C.contentSecondary }}>
+                      {currency}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Validation error */}
+              {validationError && (
+                <View style={{ marginTop: 8, alignItems: 'center' }}>
+                  <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
+                </View>
+              )}
+
+              <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
+                {pills.map(({ label, value }) => (
+                  <PressablePill
+                    key={label}
+                    label={label}
+                    borderColor={C.border}
+                    bgColor={'transparent'}
+                    pressedBgColor={C.bgTertiary}
+                    textColor={C.contentPrimary}
+                    height={device.pillHeight}
+                    fontSize={device.pillFontSize}
+                    padH={device.pillPadH}
+                    onPress={() => {
+                      const [intStr = '0', decStr] = (raw || '0').split('.');
+                      const newInt = parseInt(intStr, 10) + parseInt(value, 10);
+                      setRaw(decStr !== undefined ? `${newInt}.${decStr}` : String(newInt));
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
           <View style={[s.amountLockup, { gap: device.lockupGap, marginTop: device.lockupMarginTop }]}>
             <View style={s.amountRow}>
               {displayAmount.split('').map((ch, i) =>
@@ -707,7 +833,7 @@ export default function AddMoneyScreen() {
                         colors={C}
                       />
                       <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
-                      <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
+                      <TouchableOpacity activeOpacity={0.7} disabled={!!validationError} onPress={() => setShowSheet(true)}>
                         <View style={{ paddingBottom: 1, borderBottomWidth: 1, borderBottomColor: C.contentSecondary, borderStyle: 'dashed' }}>
                           <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionValue}</Text>
                         </View>
@@ -715,7 +841,9 @@ export default function AddMoneyScreen() {
                     </>
                   : <>
                       <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-                      <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                      <TouchableOpacity onPress={() => setShowSheet(true)} activeOpacity={0.7}>
+                        <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                      </TouchableOpacity>
                     </>
               }
             </View>
@@ -728,6 +856,9 @@ export default function AddMoneyScreen() {
                   bgColor={C.bgPrimary}
                   pressedBgColor={C.bgTertiary}
                   textColor={C.contentPrimary}
+                  height={device.pillHeight}
+                  fontSize={device.pillFontSize}
+                  padH={device.pillPadH}
                   onPress={() => {
                     const [intStr = '0', decStr] = (raw || '0').split('.');
                     const newInt = parseInt(intStr, 10) + parseInt(value, 10);
@@ -737,6 +868,7 @@ export default function AddMoneyScreen() {
               ))}
             </View>
           </View>
+          )}
         </View>
         <Text style={[s.receiveByText, { color: C.contentSecondary }]}>
           Receive money by 5:00 PM, 19 Jun
@@ -795,6 +927,63 @@ export default function AddMoneyScreen() {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {/* Bottom Sheet Overlay */}
+      {showSheet && (
+        <TouchableOpacity
+          style={s.sheetOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSheet(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={[s.sheetContainer, { backgroundColor: C.bgSurfaceZ1 }]}>
+            <View style={s.sheetTitleFrame}>
+              <Text style={[s.sheetTitle, { color: C.contentPrimary }]}>How was this calculated?</Text>
+              <Text style={[s.sheetSubtitle, { color: C.contentSecondary }]}>
+                $1 = ₹{EXCHANGE_RATE.toFixed(4)}. Rates will refresh in 29:49
+              </Text>
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
+              <View style={[s.sheetCard, { backgroundColor: C.bgSurfaceZ2, borderColor: C.borderOnSurfaceZ1 }]}>
+                <View style={s.sheetRow}>
+                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>You are transferring</Text>
+                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
+                    {currency === 'INR' ? displayAmount : `₹${(numericValue * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                  </Text>
+                </View>
+                <View style={s.sheetRow}>
+                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Charges</Text>
+                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>₹45</Text>
+                </View>
+                <View style={[s.sheetDivider, { backgroundColor: C.borderOnSurfaceZ1 }]} />
+                <View style={s.sheetRow}>
+                  <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Amount to be credited</Text>
+                  <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
+                    {(() => {
+                      const inrVal = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
+                      const credited = Math.max(0, inrVal - 45);
+                      return `₹${credited.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+                    })()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+              <Text style={[s.sheetDisclaimer, { color: C.contentSecondary }]}>
+                GST and forex rate is indicative and can vary slightly once order is confirmed. TCS, if applicable, will be charged on the amount you are transferring.
+              </Text>
+            </View>
+            <View style={[s.ctaDock, { paddingBottom: 16 }]}>
+              <TouchableOpacity
+                style={[s.ctaBtn, { backgroundColor: C.contentAccent }]}
+                onPress={() => setShowSheet(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.ctaText, { color: C.contentOnColour }]}>Okay</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
     </>
   );
 
@@ -891,9 +1080,13 @@ const s = StyleSheet.create({
   conversionText: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
   infoIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 16, marginLeft: 4, lineHeight: 20 },
   pillRow: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
-  pill: { height: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  pillText: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 18 },
+  pill: { borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pillText: { fontFamily: 'GrowwSans-Medium', lineHeight: 18 },
   receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center', position: 'absolute', bottom: 8, left: 0, right: 0 },
+
+  fieldCard: { borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, width: '100%' },
+  fieldCardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  maxPill: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
 
   paymentRow: {
     height: 72, flexDirection: 'row', alignItems: 'center',
@@ -919,4 +1112,23 @@ const s = StyleSheet.create({
 
   homeIndicator: { height: 20, alignItems: 'center', justifyContent: 'center' },
   homeHandle: { width: 108, height: 2, borderRadius: 12 },
+
+  sheetOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: 'hidden',
+  },
+  sheetTitleFrame: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, gap: 4 },
+  sheetTitle: { fontFamily: 'Sohne-Kraftig', fontSize: 18, lineHeight: 28 },
+  sheetSubtitle: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
+  sheetCard: {
+    borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20, gap: 16,
+  },
+  sheetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sheetLabel: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
+  sheetValue: { fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20 },
+  sheetDivider: { height: 1, width: '100%' },
+  sheetDisclaimer: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18 },
 });
