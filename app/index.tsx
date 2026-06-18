@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   Animated,
+  Easing,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -127,7 +128,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 16,
     numpadRowH: 48,
     toggleMarginV: -8,
-    pillTopGap: 0,
+    pillTopGap: 8,
     ctaPaddingBottom: 0,
     amountFontSize: 40,
     amountLineHeight: 48,
@@ -177,12 +178,24 @@ function buildDisplayAmount(raw: string, currency: Currency): string {
   return `${sym}${intFormatted}`;
 }
 
-function buildConversion(raw: string, currency: Currency): string {
+function buildConversionValue(raw: string, currency: Currency): string {
   const num = parseFloat(raw || '0');
   if (currency === 'INR') {
-    return `You will get $${(num / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${(num / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  return `You will get ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  return `₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+function buildConversion(raw: string, currency: Currency): string {
+  return `You will get ${buildConversionValue(raw, currency)}`;
+}
+
+function computeToggleRaw(raw: string, fromCurrency: Currency): string {
+  if (!raw) return '';
+  const num = parseFloat(raw);
+  if (!num) return '';
+  if (fromCurrency === 'INR') return (num / EXCHANGE_RATE).toFixed(2);
+  return String(Math.round(num * EXCHANGE_RATE));
 }
 
 // Fires when the user has committed their integer part (typed a decimal)
@@ -224,6 +237,37 @@ function AmountChar({ ch, color, fontSize, lineHeight }: {
         <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize, lineHeight, color }}>{ch}</Text>
       </Animated.View>
     </View>
+  );
+}
+
+// ─── Pressable Pill (Emil-style spring scale + pressed fill) ─────────────────
+
+function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, textColor }: {
+  label: string; onPress: () => void;
+  borderColor: string; bgColor: string; pressedBgColor: string; textColor: string;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const [pressed, setPressed] = useState(false);
+  const pressIn = () => {
+    setPressed(true);
+    Animated.spring(scale, { toValue: 0.95, tension: 400, friction: 30, useNativeDriver: true }).start();
+  };
+  const pressOut = () => {
+    setPressed(false);
+    Animated.spring(scale, { toValue: 1, tension: 200, friction: 14, useNativeDriver: true }).start();
+  };
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={[s.pill, { borderColor, backgroundColor: pressed ? pressedBgColor : bgColor }]}
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        activeOpacity={1}
+      >
+        <Text style={[s.pillText, { color: textColor }]}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -483,7 +527,13 @@ export default function AddMoneyScreen() {
   const [theme, setTheme] = useState<Theme>('dark');
   const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
-  const [showValidation, setShowValidation] = useState(false);  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const [showValidation, setShowValidation] = useState(false);
+  const [swapping, setSwapping] = useState(false);
+  const [swapOut, setSwapOut] = useState({ amount: '', convValue: '' });
+  const [swapIn, setSwapIn] = useState({ amount: '', convValue: '' });
+  const swapAnim = useRef(new Animated.Value(0)).current;
+  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const ctaScale = useRef(new Animated.Value(1)).current;
 
   const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
   const device = IS_WEB ? DEVICES[deviceId] : DEVICES.pro17;
@@ -524,9 +574,25 @@ export default function AddMoneyScreen() {
     [raw]
   );
 
-  const onToggle = () => { setCurrency((p) => (p === 'INR' ? 'USD' : 'INR')); setRaw(''); };
+  const onToggle = () => {
+    if (validationError) return;
+    const newCurrency: Currency = currency === 'INR' ? 'USD' : 'INR';
+    const newRaw = computeToggleRaw(raw, currency);
+    if (!raw) { setCurrency(newCurrency); return; }
+    setSwapOut({ amount: displayAmount, convValue: conversionValue });
+    setSwapIn({ amount: buildDisplayAmount(newRaw, newCurrency), convValue: buildConversionValue(newRaw, newCurrency) });
+    setSwapping(true);
+    swapAnim.setValue(0);
+    Animated.timing(swapAnim, { toValue: 1, duration: 220, easing: Easing.inOut(Easing.ease), useNativeDriver: true }).start(() => {
+      setCurrency(newCurrency);
+      setRaw(newRaw);
+      setShowValidation(false);
+      setSwapping(false);
+    });
+  };
 
   const displayAmount = buildDisplayAmount(raw, currency);
+  const conversionValue = buildConversionValue(raw, currency);
   const conversionText = buildConversion(raw, currency);
   const validationError = getValidationError(raw, currency, showValidation);
   const pills = PILLS[currency];
@@ -560,47 +626,72 @@ export default function AddMoneyScreen() {
         <View style={s.amountCenterWrap}>
           <View style={[s.amountLockup, { gap: device.lockupGap }]}>
             <View style={s.amountRow}>
-              {displayAmount.split('').map((ch, i) => (
-                <AmountChar
-                  key={`${i}-${ch}`}
-                  ch={ch}
-                  color={C.contentPrimary}
-                  fontSize={device.amountFontSize}
-                  lineHeight={device.amountLineHeight}
-                />
-              ))}
-              <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />
+              {swapping ? (
+                <View style={{ overflow: 'hidden', height: device.amountLineHeight }}>
+                  <Animated.View style={{ transform: [{ translateY: swapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -device.amountLineHeight] }) }] }}>
+                    <View style={{ height: device.amountLineHeight, flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{swapOut.amount}</Text>
+                    </View>
+                    <View style={{ height: device.amountLineHeight, flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{swapIn.amount}</Text>
+                    </View>
+                  </Animated.View>
+                </View>
+              ) : (
+                displayAmount.split('').map((ch, i) => (
+                  <AmountChar
+                    key={`${i}-${ch}`}
+                    ch={ch}
+                    color={C.contentPrimary}
+                    fontSize={device.amountFontSize}
+                    lineHeight={device.amountLineHeight}
+                  />
+                ))
+              )}
+              {!swapping && <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />}
             </View>
             <TouchableOpacity
-              style={[s.toggleBtn, { backgroundColor: C.bgTertiary, marginVertical: device.toggleMarginV }]}
+              style={[s.toggleBtn, { backgroundColor: validationError ? C.bgDisabled : C.bgTertiary, marginVertical: device.toggleMarginV }]}
               onPress={onToggle}
-              activeOpacity={0.7}
+              activeOpacity={validationError ? 1 : 0.7}
+              disabled={!!validationError}
             >
-              <Text style={[s.toggleIcon, { color: C.contentSecondary }]}>{IC.arrowUpDown}</Text>
+              <Text style={[s.toggleIcon, { color: validationError ? C.contentDisabled : C.contentSecondary }]}>{IC.arrowUpDown}</Text>
             </TouchableOpacity>
             <View style={s.conversionRow}>
               {validationError
                 ? <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
-                : <>
-                    <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
-                    <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
-                  </>
+                : swapping
+                  ? <>
+                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>You will get </Text>
+                      <View style={{ overflow: 'hidden', height: 20 }}>
+                        <Animated.View style={{ transform: [{ translateY: swapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }] }}>
+                          <Text style={[s.conversionText, { color: C.contentSecondary }]}>{swapOut.convValue}</Text>
+                          <Text style={[s.conversionText, { color: C.contentSecondary }]}>{swapIn.convValue}</Text>
+                        </Animated.View>
+                      </View>
+                    </>
+                  : <>
+                      <Text style={[s.conversionText, { color: C.contentSecondary }]}>{conversionText}</Text>
+                      <Text style={[s.infoIcon, { color: C.contentSecondary }]}>{IC.infoCircle}</Text>
+                    </>
               }
             </View>
             <View style={[s.pillRow, { marginTop: device.pillTopGap }]}>
               {pills.map(({ label, value }) => (
-                <TouchableOpacity
+                <PressablePill
                   key={label}
-                  style={[s.pill, { borderColor: C.border, backgroundColor: C.bgPrimary }]}
+                  label={label}
+                  borderColor={C.border}
+                  bgColor={C.bgPrimary}
+                  pressedBgColor={C.bgTertiary}
+                  textColor={C.contentPrimary}
                   onPress={() => {
                     const [intStr = '0', decStr] = (raw || '0').split('.');
                     const newInt = parseInt(intStr, 10) + parseInt(value, 10);
                     setRaw(decStr !== undefined ? `${newInt}.${decStr}` : String(newInt));
                   }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[s.pillText, { color: C.contentPrimary }]}>{label}</Text>
-                </TouchableOpacity>
+                />
               ))}
             </View>
           </View>
@@ -645,13 +736,22 @@ export default function AddMoneyScreen() {
 
       {/* CTA Dock */}
       <View style={[s.ctaDock, { paddingBottom: device.ctaPaddingBottom }]}>
-        <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: ctaEnabled ? C.contentAccent : C.bgDisabled }]}
-          activeOpacity={0.85}
-          disabled={!ctaEnabled}
-        >
-          <Text style={[s.ctaText, { color: ctaEnabled ? '#FFFFFF' : C.contentDisabled }]}>Add money</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+          <TouchableOpacity
+            style={[s.ctaBtn, { backgroundColor: ctaEnabled ? C.contentAccent : C.bgDisabled }]}
+            activeOpacity={1}
+            disabled={!ctaEnabled}
+            onPressIn={() => {
+              if (!ctaEnabled) return;
+              Animated.spring(ctaScale, { toValue: 0.95, tension: 400, friction: 30, useNativeDriver: true }).start();
+            }}
+            onPressOut={() => {
+              Animated.spring(ctaScale, { toValue: 1, tension: 200, friction: 14, useNativeDriver: true }).start();
+            }}
+          >
+            <Text style={[s.ctaText, { color: ctaEnabled ? '#FFFFFF' : C.contentDisabled }]}>Add money</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </>
   );
