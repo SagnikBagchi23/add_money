@@ -622,6 +622,7 @@ export default function AddMoneyScreen() {
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
+  const [iter3ActiveField, setIter3ActiveField] = useState<'top' | 'bottom'>('bottom');
   const sheetOverlayOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(400)).current;
   const prevDisplayRef = useRef('');
@@ -745,46 +746,73 @@ export default function AddMoneyScreen() {
         <View style={s.amountCenterWrap}>
           {iterationId === 'iter3' ? (
             <View style={[s.amountLockup, { gap: 8, marginTop: device.lockupMarginTop, width: '100%', paddingHorizontal: 16 }]}>
-              {/* Output card — conversion amount */}
-              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
-                <View style={s.fieldCardRow}>
-                  <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
-                    {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Input card — amount entry (selected) */}
-              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.contentSecondary }]}>
-                <View style={s.fieldCardRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    {displayAmount.split('').map((ch, i) =>
-                      newCharIndices.has(i) ? (
-                        <AmountChar
-                          key={`${i}-${ch}-a`}
-                          ch={ch}
-                          color={C.contentPrimary}
-                          fontSize={device.iter3InputFontSize}
-                          lineHeight={device.iter3InputLineHeight}
-                        />
-                      ) : (
-                        <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary }}>{ch}</Text>
-                      )
-                    )}
-                    <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.iter3InputLineHeight }]} />
+              {/* Top card */}
+              {iter3ActiveField === 'top' ? (
+                <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.contentSecondary }]}>
+                  <View style={s.fieldCardRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      {displayAmount.split('').map((ch, i) =>
+                        newCharIndices.has(i) ? (
+                          <AmountChar key={`${i}-${ch}-a`} ch={ch} color={C.contentPrimary} fontSize={device.iter3InputFontSize} lineHeight={device.iter3InputLineHeight} />
+                        ) : (
+                          <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary }}>{ch}</Text>
+                        )
+                      )}
+                      <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.iter3InputLineHeight }]} />
+                    </View>
+                    <TouchableOpacity style={[s.maxPill, { borderColor: C.border }]} onPress={() => { const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE); setRaw(String(maxVal)); }} activeOpacity={0.7}>
+                      <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={[s.maxPill, { borderColor: C.border }]}
-                    onPress={() => {
-                      const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
-                      setRaw(String(maxVal));
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
+              ) : (
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { onToggle(); setIter3ActiveField('top'); }}>
+                  <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
+                    <View style={s.fieldCardRow}>
+                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
+                        {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
+                      </Text>
+                      <TouchableOpacity onPress={openSheet} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={{ fontFamily: 'GrowwHugeStandard', fontSize: 16, lineHeight: 20, color: C.contentSecondary }}>{IC.infoCircle}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Bottom card */}
+              {iter3ActiveField === 'bottom' ? (
+                <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.contentSecondary }]}>
+                  <View style={s.fieldCardRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      {displayAmount.split('').map((ch, i) =>
+                        newCharIndices.has(i) ? (
+                          <AmountChar key={`${i}-${ch}-a`} ch={ch} color={C.contentPrimary} fontSize={device.iter3InputFontSize} lineHeight={device.iter3InputLineHeight} />
+                        ) : (
+                          <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary }}>{ch}</Text>
+                        )
+                      )}
+                      <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.iter3InputLineHeight }]} />
+                    </View>
+                    <TouchableOpacity style={[s.maxPill, { borderColor: C.border }]} onPress={() => { const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE); setRaw(String(maxVal)); }} activeOpacity={0.7}>
+                      <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { onToggle(); setIter3ActiveField('bottom'); }}>
+                  <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
+                    <View style={s.fieldCardRow}>
+                      <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
+                        {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
+                      </Text>
+                      <TouchableOpacity onPress={openSheet} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={{ fontFamily: 'GrowwHugeStandard', fontSize: 16, lineHeight: 20, color: C.contentSecondary }}>{IC.infoCircle}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Validation error */}
               {validationError && (
