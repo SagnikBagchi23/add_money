@@ -185,10 +185,11 @@ function buildConversion(raw: string, currency: Currency): string {
   return `You will get ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
-// Only shows an error once the user has committed to their integer part (typed a decimal).
-// Before the decimal, any partial number can still grow to reach the minimum.
-function getValidationError(raw: string, currency: Currency): string | null {
-  if (!raw || !raw.includes('.')) return null;
+// Shows an error when the user has committed their integer part (typed a decimal),
+// OR when they've paused typing for 2 seconds with a below-minimum value.
+function getValidationError(raw: string, currency: Currency, idleTimeout: boolean): string | null {
+  if (!raw) return null;
+  if (!raw.includes('.') && !idleTimeout) return null;
   const num = parseFloat(raw);
   if (!num) return null;
   const inrValue = currency === 'INR' ? num : num * EXCHANGE_RATE;
@@ -456,6 +457,7 @@ export default function AddMoneyScreen() {
   const [theme, setTheme] = useState<Theme>('dark');
   const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
+  const [idleTimeout, setIdleTimeout] = useState(false);
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
@@ -472,6 +474,13 @@ export default function AddMoneyScreen() {
     anim.start();
     return () => anim.stop();
   }, []);
+
+  useEffect(() => {
+    setIdleTimeout(false);
+    if (!raw) return;
+    const t = setTimeout(() => setIdleTimeout(true), 2000);
+    return () => clearTimeout(t);
+  }, [raw]);
 
   const onKey = useCallback(
     (key: string) => {
@@ -493,7 +502,7 @@ export default function AddMoneyScreen() {
 
   const displayAmount = buildDisplayAmount(raw, currency);
   const conversionText = buildConversion(raw, currency);
-  const validationError = getValidationError(raw, currency);
+  const validationError = getValidationError(raw, currency, idleTimeout);
   const pills = PILLS[currency];
 
   const numericValue = parseFloat(raw || '0');
