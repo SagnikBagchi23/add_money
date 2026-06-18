@@ -110,7 +110,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 8,
     numpadRowH: 40,
     toggleMarginV: -4,
-    pillTopGap: 8,
+    pillTopGap: 16,
     ctaPaddingBottom: 8,
     amountFontSize: 32,
     amountLineHeight: 40,
@@ -128,7 +128,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     numpadPadV: 16,
     numpadRowH: 48,
     toggleMarginV: -8,
-    pillTopGap: 8,
+    pillTopGap: 16,
     ctaPaddingBottom: 0,
     amountFontSize: 40,
     amountLineHeight: 48,
@@ -224,7 +224,12 @@ function AmountChar({ ch, color, fontSize, lineHeight }: {
 }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const a = Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: true });
+    const a = Animated.timing(anim, {
+      toValue: 1,
+      duration: 120,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    });
     a.start();
     return () => a.stop();
   }, []);
@@ -232,12 +237,25 @@ function AmountChar({ ch, color, fontSize, lineHeight }: {
     <View style={{ overflow: 'hidden', height: lineHeight }}>
       <Animated.View style={{
         opacity: anim,
-        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [lineHeight, 0] }) }],
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [lineHeight * 0.5, 0] }) }],
       }}>
         <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize, lineHeight, color }}>{ch}</Text>
       </Animated.View>
     </View>
   );
+}
+
+function getNewCharIndices(prev: string, curr: string): Set<number> {
+  const freq = new Map<string, number>();
+  for (const ch of prev) freq.set(ch, (freq.get(ch) || 0) + 1);
+  const indices = new Set<number>();
+  for (let i = 0; i < curr.length; i++) {
+    const ch = curr[i];
+    const rem = freq.get(ch) || 0;
+    if (rem > 0) freq.set(ch, rem - 1);
+    else indices.add(i);
+  }
+  return indices;
 }
 
 // ─── Pressable Pill (Emil-style spring scale + pressed fill) ─────────────────
@@ -528,6 +546,7 @@ export default function AddMoneyScreen() {
   const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const [showValidation, setShowValidation] = useState(false);
+  const prevDisplayRef = useRef('');
   const [swapping, setSwapping] = useState(false);
   const [swapOut, setSwapOut] = useState({ amount: '', convValue: '' });
   const [swapIn, setSwapIn] = useState({ amount: '', convValue: '' });
@@ -597,6 +616,9 @@ export default function AddMoneyScreen() {
   const validationError = getValidationError(raw, currency, showValidation);
   const pills = PILLS[currency];
 
+  const newCharIndices = getNewCharIndices(prevDisplayRef.current, displayAmount);
+  useEffect(() => { prevDisplayRef.current = displayAmount; }, [displayAmount]);
+
   const numericValue = parseFloat(raw || '0');
   const inrEquivalent = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
   const ctaEnabled = inrEquivalent >= MIN_INR;
@@ -638,15 +660,19 @@ export default function AddMoneyScreen() {
                   </Animated.View>
                 </View>
               ) : (
-                displayAmount.split('').map((ch, i) => (
-                  <AmountChar
-                    key={`${i}-${ch}`}
-                    ch={ch}
-                    color={C.contentPrimary}
-                    fontSize={device.amountFontSize}
-                    lineHeight={device.amountLineHeight}
-                  />
-                ))
+                displayAmount.split('').map((ch, i) =>
+                  newCharIndices.has(i) ? (
+                    <AmountChar
+                      key={`${i}-${ch}-a`}
+                      ch={ch}
+                      color={C.contentPrimary}
+                      fontSize={device.amountFontSize}
+                      lineHeight={device.amountLineHeight}
+                    />
+                  ) : (
+                    <Text key={`${i}-${ch}`} style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.amountFontSize, lineHeight: device.amountLineHeight, color: C.contentPrimary }}>{ch}</Text>
+                  )
+                )
               )}
               {!swapping && <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />}
             </View>
