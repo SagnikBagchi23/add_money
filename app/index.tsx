@@ -521,7 +521,7 @@ const cp = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
-    gap: 22,
+    gap: 44,
   },
   section: { gap: 8 },
   sectionLabel: {
