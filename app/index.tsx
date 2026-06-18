@@ -486,7 +486,7 @@ export default function AddMoneyScreen() {
           <Text style={[s.topSubtitle, { color: C.contentSecondary }]}>
             {currency === 'INR'
               ? `₹${AVAILABLE_INR.toLocaleString('en-IN')} available`
-              : `$${(AVAILABLE_INR / EXCHANGE_RATE).toFixed(2)} available`}
+              : `$${(AVAILABLE_INR / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} available`}
           </Text>
         </View>
         <View style={s.iconBtn} />
