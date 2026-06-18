@@ -95,6 +95,7 @@ type DeviceConfig = {
   amountFontSize: number;
   amountLineHeight: number;
   lockupGap: number;
+  lockupMarginTop: number;
 };
 
 const DEVICES: Record<DeviceId, DeviceConfig> = {
@@ -115,6 +116,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     amountFontSize: 32,
     amountLineHeight: 40,
     lockupGap: 12,
+    lockupMarginTop: -24,
   },
   iphone15: {
     name: 'iPhone 15',
@@ -133,6 +135,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     amountFontSize: 40,
     amountLineHeight: 48,
     lockupGap: 24,
+    lockupMarginTop: -40,
   },
 };
 
@@ -646,7 +649,7 @@ export default function AddMoneyScreen() {
       {/* Amount Zone */}
       <View style={s.amountZone}>
         <View style={s.amountCenterWrap}>
-          <View style={[s.amountLockup, { gap: device.lockupGap }]}>
+          <View style={[s.amountLockup, { gap: device.lockupGap, marginTop: device.lockupMarginTop }]}>
             <View style={s.amountRow}>
               {swapping ? (
                 <View style={{ overflow: 'hidden', height: device.amountLineHeight }}>
