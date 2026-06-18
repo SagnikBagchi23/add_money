@@ -550,7 +550,7 @@ export default function AddMoneyScreen() {
       </View>
 
       {/* CTA Dock */}
-      <View style={[s.ctaDock, { backgroundColor: C.bgPrimary, borderColor: C.border }]}>
+      <View style={s.ctaDock}>
         <TouchableOpacity
           style={[s.ctaBtn, { backgroundColor: C.contentAccent, opacity: ctaEnabled ? 1 : 0.38 }]}
           activeOpacity={0.85}
@@ -677,7 +677,7 @@ const s = StyleSheet.create({
   numpadDigit: { fontFamily: 'Sohne-Kraftig', fontSize: 28, lineHeight: 36, textAlign: 'center' },
   numpadIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 26, lineHeight: 32 },
 
-  ctaDock: { borderTopWidth: 1, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 16 },
+  ctaDock: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 8 },
   ctaBtn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: 'GrowwSans-Medium', fontSize: 16, lineHeight: 24, color: '#FFFFFF' },
 
