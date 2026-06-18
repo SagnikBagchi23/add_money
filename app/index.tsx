@@ -25,7 +25,7 @@ const IC = {
   arrowUpDown: String.fromCharCode(0xEA24),
   infoCircle:  String.fromCharCode(0xEADB),
   arrowRight:  String.fromCharCode(0xEA1D),
-  delete:      String.fromCharCode(0xEA89),
+  delete:      String.fromCharCode(0xEA8A),
 };
 
 // ─── Theme Colors ─────────────────────────────────────────────────────────────
