@@ -654,7 +654,7 @@ const s = StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
   cursor: { width: 2, height: 48, marginLeft: 3 },
-  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginVertical: -4 },
   toggleIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 12, lineHeight: 14 },
   conversionRow: { flexDirection: 'row', alignItems: 'center' },
   conversionText: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
@@ -662,7 +662,7 @@ const s = StyleSheet.create({
   pillRow: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   pill: { height: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   pillText: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 18 },
-  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center' },
 
   paymentRow: {
     height: 72, flexDirection: 'row', alignItems: 'center',
