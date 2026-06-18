@@ -180,16 +180,16 @@ function buildDisplayAmount(raw: string, currency: Currency): string {
 function buildConversion(raw: string, currency: Currency): string {
   const num = parseFloat(raw || '0');
   if (currency === 'INR') {
-    return `You will get $${(num / EXCHANGE_RATE).toFixed(2)}`;
+    return `You will get $${(num / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   return `You will get ₹${(num * EXCHANGE_RATE).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
-// Shows an error when the user has committed their integer part (typed a decimal),
-// OR when they've paused typing for 2 seconds with a below-minimum value.
-function getValidationError(raw: string, currency: Currency, idleTimeout: boolean): string | null {
+// Fires when the user has committed their integer part (typed a decimal)
+// OR paused for 2 seconds with a below-minimum value. Stays true until input is cleared.
+function getValidationError(raw: string, currency: Currency, showValidation: boolean): string | null {
   if (!raw) return null;
-  if (!raw.includes('.') && !idleTimeout) return null;
+  if (!showValidation) return null;
   const num = parseFloat(raw);
   if (!num) return null;
   const inrValue = currency === 'INR' ? num : num * EXCHANGE_RATE;
@@ -457,8 +457,7 @@ export default function AddMoneyScreen() {
   const [theme, setTheme] = useState<Theme>('dark');
   const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
   const [iterationId, setIterationId] = useState<IterationId>('iter1');
-  const [idleTimeout, setIdleTimeout] = useState(false);
-  const cursorOpacity = useRef(new Animated.Value(1)).current;
+  const [showValidation, setShowValidation] = useState(false);  const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
   const device = IS_WEB ? DEVICES[deviceId] : DEVICES.pro17;
@@ -476,11 +475,12 @@ export default function AddMoneyScreen() {
   }, []);
 
   useEffect(() => {
-    setIdleTimeout(false);
-    if (!raw) return;
-    const t = setTimeout(() => setIdleTimeout(true), 2000);
+    if (!raw) { setShowValidation(false); return; }
+    if (showValidation) return; // already committed — backspace won't reset it
+    if (raw.includes('.')) { setShowValidation(true); return; }
+    const t = setTimeout(() => setShowValidation(true), 2000);
     return () => clearTimeout(t);
-  }, [raw]);
+  }, [raw, showValidation]);
 
   const onKey = useCallback(
     (key: string) => {
@@ -502,7 +502,7 @@ export default function AddMoneyScreen() {
 
   const displayAmount = buildDisplayAmount(raw, currency);
   const conversionText = buildConversion(raw, currency);
-  const validationError = getValidationError(raw, currency, idleTimeout);
+  const validationError = getValidationError(raw, currency, showValidation);
   const pills = PILLS[currency];
 
   const numericValue = parseFloat(raw || '0');
