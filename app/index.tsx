@@ -201,6 +201,32 @@ function getValidationError(raw: string, currency: Currency, showValidation: boo
   return null;
 }
 
+// ─── Animated Amount Character (Emil Kowalski / number-flow style) ───────────
+// Each character clips to its own lineHeight box; new characters slide up from
+// below the clip edge (translateY: lineHeight → 0) with a simultaneous fade.
+// Key = "${position}-${char}" so only genuinely new/changed chars remount+animate.
+
+function AmountChar({ ch, color, fontSize, lineHeight }: {
+  ch: string; color: string; fontSize: number; lineHeight: number;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const a = Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: true });
+    a.start();
+    return () => a.stop();
+  }, []);
+  return (
+    <View style={{ overflow: 'hidden', height: lineHeight }}>
+      <Animated.View style={{
+        opacity: anim,
+        transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [lineHeight, 0] }) }],
+      }}>
+        <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize, lineHeight, color }}>{ch}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 // ─── Status Bar Icon Sub-Components ──────────────────────────────────────────
 
 function SignalBars({ color }: { color: string }) {
@@ -534,7 +560,15 @@ export default function AddMoneyScreen() {
         <View style={s.amountCenterWrap}>
           <View style={[s.amountLockup, { gap: device.lockupGap }]}>
             <View style={s.amountRow}>
-              <Text style={[s.amountText, { color: C.contentPrimary, fontSize: device.amountFontSize, lineHeight: device.amountLineHeight }]}>{displayAmount}</Text>
+              {displayAmount.split('').map((ch, i) => (
+                <AmountChar
+                  key={`${i}-${ch}`}
+                  ch={ch}
+                  color={C.contentPrimary}
+                  fontSize={device.amountFontSize}
+                  lineHeight={device.amountLineHeight}
+                />
+              ))}
               <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />
             </View>
             <TouchableOpacity
@@ -705,7 +739,7 @@ const s = StyleSheet.create({
 
   amountZone: { flex: 1 },
   amountCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  amountLockup: { alignItems: 'center', gap: 12, marginTop: -32 },
+  amountLockup: { alignItems: 'center', gap: 12, marginTop: -24 },
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
   cursor: { width: 2, height: 48, marginLeft: 3 },
