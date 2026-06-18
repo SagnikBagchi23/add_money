@@ -197,7 +197,7 @@ function computeToggleRaw(raw: string, fromCurrency: Currency): string {
   if (!raw) return '';
   const num = parseFloat(raw);
   if (!num) return '';
-  if (fromCurrency === 'INR') return (num / EXCHANGE_RATE).toFixed(2);
+  if (fromCurrency === 'INR') return String(Math.round(num / EXCHANGE_RATE));
   return String(Math.round(num * EXCHANGE_RATE));
 }
 
@@ -287,6 +287,37 @@ function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, t
         activeOpacity={1}
       >
         <Text style={[s.pillText, { color: textColor }]}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function PressableToggle({ onPress, disabled, toggleMarginV }: {
+  onPress: () => void; disabled: boolean; toggleMarginV: number;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const [pressed, setPressed] = useState(false);
+  const pressIn = () => {
+    setPressed(true);
+    Animated.spring(scale, { toValue: 0.85, tension: 400, friction: 30, useNativeDriver: true }).start();
+  };
+  const pressOut = () => {
+    setPressed(false);
+    Animated.spring(scale, { toValue: 1, tension: 200, friction: 14, useNativeDriver: true }).start();
+  };
+  const bg = disabled ? C.bgDisabled : pressed ? C.bgSecondary : C.bgTertiary;
+  const fg = disabled ? C.contentDisabled : C.contentSecondary;
+  return (
+    <Animated.View style={{ transform: [{ scale }], marginVertical: toggleMarginV }}>
+      <TouchableOpacity
+        style={[s.toggleBtn, { backgroundColor: bg }]}
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        activeOpacity={1}
+        disabled={disabled}
+      >
+        <Text style={[s.toggleIcon, { color: fg }]}>{IC.arrowUpDown}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -679,14 +710,11 @@ export default function AddMoneyScreen() {
               )}
               {!swapping && <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />}
             </View>
-            <TouchableOpacity
-              style={[s.toggleBtn, { backgroundColor: validationError ? C.bgDisabled : C.bgTertiary, marginVertical: device.toggleMarginV }]}
+            <PressableToggle
               onPress={onToggle}
-              activeOpacity={validationError ? 1 : 0.7}
               disabled={!!validationError}
-            >
-              <Text style={[s.toggleIcon, { color: validationError ? C.contentDisabled : C.contentSecondary }]}>{IC.arrowUpDown}</Text>
-            </TouchableOpacity>
+              toggleMarginV={device.toggleMarginV}
+            />
             <View style={s.conversionRow}>
               {validationError
                 ? <Text style={[s.conversionText, { color: C.contentNegative }]}>{validationError}</Text>
