@@ -963,7 +963,7 @@ export default function AddMoneyScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[s.sheetTitle, { color: C.contentPrimary }]}>How was this calculated?</Text>
             </View>
-            {iterationId === 'iter1' && (
+            {iterationId === 'iter2' && (
               <View style={{ flexDirection: 'row', backgroundColor: C.bgTertiary, borderRadius: 8, padding: 2, marginLeft: 12, marginTop: 2 }}>
                 {(['INR', 'USD'] as Currency[]).map((c) => (
                   <TouchableOpacity
@@ -992,7 +992,7 @@ export default function AddMoneyScreen() {
             {(() => {
               const inrVal = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
               const usdVal = currency === 'USD' ? numericValue : numericValue / EXCHANGE_RATE;
-              const showInr = iterationId === 'iter1' ? sheetCurrency === 'INR' : true;
+              const showInr = iterationId === 'iter2' ? sheetCurrency === 'INR' : true;
               const transferringText = showInr
                 ? `₹${inrVal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
                 : `$${usdVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1015,7 +1015,7 @@ export default function AddMoneyScreen() {
                   <View style={[s.sheetDivider, { backgroundColor: C.borderOnSurfaceZ1 }]} />
                   <View style={s.sheetRow}>
                     <Text style={[s.sheetLabel, { color: C.contentSecondary }]}>Amount to be credited</Text>
-                    {iterationId === 'iter2' ? (
+                    {iterationId === 'iter1' ? (
                       <View style={{ alignItems: 'flex-end' }}>
                         <Text style={[s.sheetValue, { color: C.contentPrimary }]}>
                           {`₹${creditedInr.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
@@ -1187,7 +1187,7 @@ const s = StyleSheet.create({
   sheetContainer: {
     borderTopLeftRadius: 12, borderTopRightRadius: 12, overflow: 'hidden',
   },
-  sheetTitleFrame: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, gap: 4 },
+  sheetTitleFrame: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, gap: 2 },
   sheetTitle: { fontFamily: 'Sohne-Kraftig', fontSize: 18, lineHeight: 28 },
   sheetSubtitle: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
   sheetCard: {
