@@ -662,7 +662,7 @@ const s = StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
   cursor: { width: 2, height: 48, marginLeft: 3 },
-  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginVertical: -4 },
+  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginVertical: -8 },
   toggleIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 12, lineHeight: 14 },
   conversionRow: { flexDirection: 'row', alignItems: 'center' },
   conversionText: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
