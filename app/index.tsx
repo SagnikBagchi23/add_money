@@ -184,7 +184,8 @@ const ITERATIONS: Record<IterationId, { name: string }> = {
 
 const EXCHANGE_RATE = 96.71;
 const AVAILABLE_INR = 143250; // random value above 1L
-const MIN_INR = 10000;
+const MIN_USD = 100;
+const MIN_INR = Math.ceil(MIN_USD * EXCHANGE_RATE);
 
 const NUMPAD_ROWS = [
   ['1', '2', '3'],
@@ -243,11 +244,11 @@ function getValidationError(raw: string, currency: Currency, showValidation: boo
   if (!showValidation) return null;
   const num = parseFloat(raw);
   if (!num) return null;
-  const inrValue = currency === 'INR' ? num : num * EXCHANGE_RATE;
-  if (inrValue < MIN_INR) {
+  const usdValue = currency === 'USD' ? num : num / EXCHANGE_RATE;
+  if (usdValue < MIN_USD) {
     return currency === 'INR'
       ? `Minimum ₹${MIN_INR.toLocaleString('en-IN')}`
-      : `Minimum $${(MIN_INR / EXCHANGE_RATE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      : `Minimum $${MIN_USD}`;
   }
   return null;
 }
@@ -714,8 +715,8 @@ export default function AddMoneyScreen() {
   useEffect(() => { prevDisplayRef.current = displayAmount; }, [displayAmount]);
 
   const numericValue = parseFloat(raw || '0');
-  const inrEquivalent = currency === 'INR' ? numericValue : numericValue * EXCHANGE_RATE;
-  const ctaEnabled = inrEquivalent >= MIN_INR;
+  const usdEquivalent = currency === 'USD' ? numericValue : numericValue / EXCHANGE_RATE;
+  const ctaEnabled = usdEquivalent >= MIN_USD;
   const maxValue = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
   const isMaxed = raw === String(maxValue);
 
@@ -1148,7 +1149,7 @@ const s = StyleSheet.create({
   pillRow: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   pill: { borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   pillText: { fontFamily: 'GrowwSans-Medium', lineHeight: 18 },
-  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center', position: 'absolute', bottom: 8, left: 0, right: 0 },
+  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center', position: 'absolute', bottom: 12, left: 0, right: 0 },
 
   fieldCard: { borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, width: '100%' },
   fieldCardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
