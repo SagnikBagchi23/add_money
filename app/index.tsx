@@ -293,8 +293,9 @@ function PressablePill({ label, onPress, borderColor, bgColor, pressedBgColor, t
   );
 }
 
-function PressableToggle({ onPress, disabled, toggleMarginV }: {
+function PressableToggle({ onPress, disabled, toggleMarginV, colors }: {
   onPress: () => void; disabled: boolean; toggleMarginV: number;
+  colors: ColorSet;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
@@ -306,8 +307,8 @@ function PressableToggle({ onPress, disabled, toggleMarginV }: {
     setPressed(false);
     Animated.spring(scale, { toValue: 1, tension: 200, friction: 14, useNativeDriver: true }).start();
   };
-  const bg = disabled ? C.bgDisabled : pressed ? C.bgSecondary : C.bgTertiary;
-  const fg = disabled ? C.contentDisabled : C.contentSecondary;
+  const bg = disabled ? colors.bgDisabled : pressed ? colors.bgTertiary : colors.bgTertiary;
+  const fg = disabled ? colors.contentDisabled : colors.contentSecondary;
   return (
     <Animated.View style={{ transform: [{ scale }], marginVertical: toggleMarginV }}>
       <TouchableOpacity
@@ -716,6 +717,7 @@ export default function AddMoneyScreen() {
                 onPress={onToggle}
                 disabled={!!validationError}
                 toggleMarginV={device.toggleMarginV}
+                colors={C}
               />
             )}
             <View style={[s.conversionRow, { height: 32, marginTop: iterationId === 'iter2' ? device.toggleMarginV : 0 }]}>
@@ -742,6 +744,7 @@ export default function AddMoneyScreen() {
                           onPress={onToggle}
                           disabled={!!validationError}
                           toggleMarginV={0}
+                          colors={C}
                         />
                         <Text style={[s.conversionText, { color: C.contentSecondary, marginLeft: 4 }]}>You will receive </Text>
                         <TouchableOpacity onPress={onToggle} activeOpacity={0.7} disabled={!!validationError}>
