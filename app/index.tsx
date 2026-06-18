@@ -33,34 +33,40 @@ const IC = {
 type ColorSet = {
   bgPrimary: string;
   bgTertiary: string;
+  bgDisabled: string;
   border: string;
   contentPrimary: string;
   contentSecondary: string;
   contentAccent: string;
+  contentDisabled: string;
   numpadText: string;
   phoneBorder: string;
 };
 
 const THEME_COLORS: Record<Theme, ColorSet> = {
   dark: {
-    bgPrimary:       '#060809',
-    bgTertiary:      '#1E2224',
-    border:          '#252A2C',
-    contentPrimary:  '#F2F5F7',
-    contentSecondary:'#989EA0',
-    contentAccent:   '#04B488',
-    numpadText:      '#EAEFF1',
-    phoneBorder:     'rgba(255,255,255,0.13)',
+    bgPrimary:        '#060809',
+    bgTertiary:       '#1E2224',
+    bgDisabled:       '#151819',
+    border:           '#252A2C',
+    contentPrimary:   '#F2F5F7',
+    contentSecondary: '#989EA0',
+    contentAccent:    '#04B488',
+    contentDisabled:  '#44494B',
+    numpadText:       '#EAEFF1',
+    phoneBorder:      'rgba(255,255,255,0.13)',
   },
   light: {
-    bgPrimary:       '#FFFFFF',
-    bgTertiary:      '#F2F5F7',
-    border:          '#DDE1E4',
-    contentPrimary:  '#0D1216',
-    contentSecondary:'#5D6668',
-    contentAccent:   '#00A377',
-    numpadText:      '#0D1216',
-    phoneBorder:     'rgba(0,0,0,0.14)',
+    bgPrimary:        '#FFFFFF',
+    bgTertiary:       '#F2F5F7',
+    bgDisabled:       '#F7F7F7',
+    border:           '#DDE1E4',
+    contentPrimary:   '#0D1216',
+    contentSecondary: '#5D6668',
+    contentAccent:    '#00A377',
+    contentDisabled:  '#BABBBC',
+    numpadText:       '#0D1216',
+    phoneBorder:      'rgba(0,0,0,0.14)',
   },
 };
 
@@ -552,11 +558,11 @@ export default function AddMoneyScreen() {
       {/* CTA Dock */}
       <View style={s.ctaDock}>
         <TouchableOpacity
-          style={[s.ctaBtn, { backgroundColor: C.contentAccent, opacity: ctaEnabled ? 1 : 0.38 }]}
+          style={[s.ctaBtn, { backgroundColor: ctaEnabled ? C.contentAccent : C.bgDisabled }]}
           activeOpacity={0.85}
           disabled={!ctaEnabled}
         >
-          <Text style={s.ctaText}>Add money</Text>
+          <Text style={[s.ctaText, { color: ctaEnabled ? '#FFFFFF' : C.contentDisabled }]}>Add money</Text>
         </TouchableOpacity>
       </View>
     </>
@@ -679,7 +685,7 @@ const s = StyleSheet.create({
 
   ctaDock: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 8 },
   ctaBtn: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontFamily: 'GrowwSans-Medium', fontSize: 16, lineHeight: 24, color: '#FFFFFF' },
+  ctaText: { fontFamily: 'GrowwSans-Medium', fontSize: 16, lineHeight: 24 },
 
   homeIndicator: { height: 20, alignItems: 'center', justifyContent: 'center' },
   homeHandle: { width: 108, height: 2, borderRadius: 12 },
