@@ -132,6 +132,7 @@ const ITERATIONS: Record<IterationId, { name: string }> = {
 // ─── App Data ─────────────────────────────────────────────────────────────────
 
 const EXCHANGE_RATE = 96.71;
+const AVAILABLE_INR = 143250; // random value above 1L
 
 const NUMPAD_ROWS = [
   ['1', '2', '3'],
@@ -482,7 +483,11 @@ export default function AddMoneyScreen() {
         </TouchableOpacity>
         <View style={s.topBarCenter}>
           <Text style={[s.topTitle, { color: C.contentPrimary }]}>Add money</Text>
-          <Text style={[s.topSubtitle, { color: C.contentSecondary }]}>₹0.00 available</Text>
+          <Text style={[s.topSubtitle, { color: C.contentSecondary }]}>
+            {currency === 'INR'
+              ? `₹${AVAILABLE_INR.toLocaleString('en-IN')} available`
+              : `$${(AVAILABLE_INR / EXCHANGE_RATE).toFixed(2)} available`}
+          </Text>
         </View>
         <View style={s.iconBtn} />
       </View>
@@ -656,7 +661,7 @@ const s = StyleSheet.create({
   topSubtitle: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 18 },
   iconText: { fontFamily: 'GrowwHugeStandard', fontSize: 20, lineHeight: 24 },
 
-  amountZone: { flex: 1, paddingBottom: 8 },
+  amountZone: { flex: 1 },
   amountCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   amountLockup: { alignItems: 'center', gap: 12 },
   amountRow: { flexDirection: 'row', alignItems: 'center' },
@@ -670,7 +675,7 @@ const s = StyleSheet.create({
   pillRow: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   pill: { height: 32, paddingHorizontal: 12, borderRadius: 99, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   pillText: { fontFamily: 'GrowwSans-Medium', fontSize: 12, lineHeight: 18 },
-  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center' },
+  receiveByText: { fontFamily: 'GrowwSans-Regular', fontSize: 12, lineHeight: 16, textAlign: 'center', position: 'absolute', bottom: 8, left: 0, right: 0 },
 
   paymentRow: {
     height: 72, flexDirection: 'row', alignItems: 'center',
