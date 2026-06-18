@@ -78,6 +78,9 @@ type DeviceConfig = {
   statusBarH: number;
   homeIndicatorH: number;
   numpadPadV: number;
+  amountFontSize: number;
+  amountLineHeight: number;
+  lockupGap: number;
 };
 
 const DEVICES: Record<DeviceId, DeviceConfig> = {
@@ -91,6 +94,9 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 44,
     homeIndicatorH: 0,
     numpadPadV: 8,
+    amountFontSize: 32,
+    amountLineHeight: 40,
+    lockupGap: 12,
   },
   iphone6: {
     name: 'iPhone 6',
@@ -102,6 +108,9 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 44,
     homeIndicatorH: 0,
     numpadPadV: 8,
+    amountFontSize: 32,
+    amountLineHeight: 40,
+    lockupGap: 12,
   },
   iphone15: {
     name: 'iPhone 15',
@@ -113,6 +122,9 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     statusBarH: 59,
     homeIndicatorH: 34,
     numpadPadV: 16,
+    amountFontSize: 40,
+    amountLineHeight: 48,
+    lockupGap: 24,
   },
 };
 
@@ -477,10 +489,10 @@ export default function AddMoneyScreen() {
       {/* Amount Zone */}
       <View style={s.amountZone}>
         <View style={s.amountCenterWrap}>
-          <View style={s.amountLockup}>
+          <View style={[s.amountLockup, { gap: device.lockupGap }]}>
             <View style={s.amountRow}>
-              <Text style={[s.amountText, { color: C.contentPrimary }]}>{displayAmount}</Text>
-              <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent }]} />
+              <Text style={[s.amountText, { color: C.contentPrimary, fontSize: device.amountFontSize, lineHeight: device.amountLineHeight }]}>{displayAmount}</Text>
+              <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />
             </View>
             <TouchableOpacity
               style={[s.toggleBtn, { backgroundColor: C.bgTertiary }]}
