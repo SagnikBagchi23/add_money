@@ -85,6 +85,7 @@ type DeviceConfig = {
   homeIndicatorH: number;
   numpadPadV: number;
   numpadRowH: number;
+  toggleMarginV: number;
   amountFontSize: number;
   amountLineHeight: number;
   lockupGap: number;
@@ -102,6 +103,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     homeIndicatorH: 0,
     numpadPadV: 8,
     numpadRowH: 36,
+    toggleMarginV: -4,
     amountFontSize: 32,
     amountLineHeight: 40,
     lockupGap: 12,
@@ -117,6 +119,7 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     homeIndicatorH: 34,
     numpadPadV: 16,
     numpadRowH: 48,
+    toggleMarginV: -8,
     amountFontSize: 40,
     amountLineHeight: 48,
     lockupGap: 24,
@@ -501,7 +504,7 @@ export default function AddMoneyScreen() {
               <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.amountLineHeight }]} />
             </View>
             <TouchableOpacity
-              style={[s.toggleBtn, { backgroundColor: C.bgTertiary }]}
+              style={[s.toggleBtn, { backgroundColor: C.bgTertiary, marginVertical: device.toggleMarginV }]}
               onPress={onToggle}
               activeOpacity={0.7}
             >
@@ -667,7 +670,7 @@ const s = StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountText: { fontFamily: 'Sohne-Kraftig', fontSize: 40, lineHeight: 48 },
   cursor: { width: 2, height: 48, marginLeft: 3 },
-  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginVertical: -8 },
+  toggleBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   toggleIcon: { fontFamily: 'GrowwHugeStandard', fontSize: 12, lineHeight: 14 },
   conversionRow: { flexDirection: 'row', alignItems: 'center' },
   conversionText: { fontFamily: 'GrowwSans-Regular', fontSize: 14, lineHeight: 20 },
