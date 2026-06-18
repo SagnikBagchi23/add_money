@@ -15,7 +15,8 @@ import {
 
 type Currency = 'INR' | 'USD';
 type Theme = 'dark' | 'light';
-type DeviceId = 'se' | 'iphone14' | 'iphone15pro' | 'iphone16' | 'pro17';
+type DeviceId = 'se' | 'iphone6' | 'iphone15';
+type IterationId = 'iter1';
 
 // ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
 
@@ -91,50 +92,34 @@ const DEVICES: Record<DeviceId, DeviceConfig> = {
     homeIndicatorH: 0,
     numpadPadV: 8,
   },
-  iphone14: {
-    name: 'iPhone 14',
-    screenW: 390,
-    screenH: 844,
-    cornerRadius: 47,
+  iphone6: {
+    name: 'iPhone 6',
+    screenW: 375,
+    screenH: 667,
+    cornerRadius: 16,
     hasDynamicIsland: false,
-    hasNotch: true,
-    statusBarH: 47,
-    homeIndicatorH: 34,
-    numpadPadV: 14,
+    hasNotch: false,
+    statusBarH: 44,
+    homeIndicatorH: 0,
+    numpadPadV: 8,
   },
-  iphone15pro: {
-    name: 'iPhone 15 Pro',
+  iphone15: {
+    name: 'iPhone 15',
     screenW: 393,
     screenH: 852,
-    cornerRadius: 55,
+    cornerRadius: 47,
     hasDynamicIsland: true,
     hasNotch: false,
     statusBarH: 59,
     homeIndicatorH: 34,
     numpadPadV: 16,
   },
-  iphone16: {
-    name: 'iPhone 16',
-    screenW: 393,
-    screenH: 852,
-    cornerRadius: 55,
-    hasDynamicIsland: true,
-    hasNotch: false,
-    statusBarH: 59,
-    homeIndicatorH: 34,
-    numpadPadV: 16,
-  },
-  pro17: {
-    name: 'iPhone 17 Pro',
-    screenW: 393,
-    screenH: 852,
-    cornerRadius: 55,
-    hasDynamicIsland: true,
-    hasNotch: false,
-    statusBarH: 59,
-    homeIndicatorH: 34,
-    numpadPadV: 16,
-  },
+};
+
+// ─── Iterations ───────────────────────────────────────────────────────────────
+
+const ITERATIONS: Record<IterationId, { name: string }> = {
+  iter1: { name: 'Iteration 1' },
 };
 
 // ─── App Data ─────────────────────────────────────────────────────────────────
@@ -291,10 +276,11 @@ function PhoneHomeIndicator({ device, color }: { device: DeviceConfig; color: st
 // ─── Control Panel (web only) ─────────────────────────────────────────────────
 
 function ControlPanel({
-  theme, onTheme, deviceId, onDevice,
+  theme, onTheme, deviceId, onDevice, iterationId, onIteration,
 }: {
   theme: Theme; onTheme: (t: Theme) => void;
   deviceId: DeviceId; onDevice: (d: DeviceId) => void;
+  iterationId: IterationId; onIteration: (i: IterationId) => void;
 }) {
   return (
     <View style={cp.panel}>
@@ -309,8 +295,8 @@ function ControlPanel({
               onPress={() => onTheme(t)}
               activeOpacity={0.7}
             >
-              <Text style={[cp.segBtnText, theme === t && cp.segBtnTextActive]}>
-                {t === 'dark' ? 'Dark' : 'Light'}
+              <Text style={cp.segBtnIcon}>
+                {t === 'dark' ? '🌙' : '☀️'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -328,7 +314,6 @@ function ControlPanel({
               onPress={() => onDevice(id)}
               activeOpacity={0.7}
             >
-              {/* Mini phone outline icon */}
               <View style={[cp.phoneIcon, deviceId === id && cp.phoneIconActive]}>
                 <View style={[cp.phoneIconHome, deviceId === id && cp.phoneIconHomeActive]} />
               </View>
@@ -340,6 +325,26 @@ function ControlPanel({
                   {cfg.screenW} × {cfg.screenH}
                 </Text>
               </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Iteration */}
+      <View style={cp.section}>
+        <Text style={cp.sectionLabel}>ITERATION</Text>
+        <View style={{ gap: 3 }}>
+          {(Object.entries(ITERATIONS) as [IterationId, { name: string }][]).map(([id, cfg]) => (
+            <TouchableOpacity
+              key={id}
+              style={[cp.deviceBtn, iterationId === id && cp.deviceBtnActive]}
+              onPress={() => onIteration(id)}
+              activeOpacity={0.7}
+            >
+              <View style={[cp.iterDot, iterationId === id && cp.iterDotActive]} />
+              <Text style={[cp.deviceName, iterationId === id && cp.deviceNameActive]}>
+                {cfg.name}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -378,8 +383,7 @@ const cp = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   segBtnActive: { backgroundColor: '#2D3236' },
-  segBtnText: { fontFamily: 'Sohne-Kraftig', fontSize: 13, color: '#5D6668' },
-  segBtnTextActive: { color: '#F2F5F7' },
+  segBtnIcon: { fontSize: 16, lineHeight: 22 },
   deviceBtn: {
     flexDirection: 'row', alignItems: 'center',
     gap: 10, paddingVertical: 9, paddingHorizontal: 10, borderRadius: 10,
@@ -398,6 +402,11 @@ const cp = StyleSheet.create({
   deviceName: { fontFamily: 'Sohne-Kraftig', fontSize: 12, lineHeight: 16, color: '#5D6668' },
   deviceNameActive: { color: '#F2F5F7' },
   deviceMeta: { fontFamily: 'Sohne-Kraftig', fontSize: 10, lineHeight: 14, color: '#3D4446' },
+  iterDot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#3D4446', marginHorizontal: 5,
+  },
+  iterDotActive: { backgroundColor: '#989EA0' },
 });
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -408,7 +417,8 @@ export default function AddMoneyScreen() {
   const [currency, setCurrency] = useState<Currency>('INR');
   const [raw, setRaw] = useState('');
   const [theme, setTheme] = useState<Theme>('dark');
-  const [deviceId, setDeviceId] = useState<DeviceId>('pro17');
+  const [deviceId, setDeviceId] = useState<DeviceId>('iphone15');
+  const [iterationId, setIterationId] = useState<IterationId>('iter1');
   const cursorOpacity = useRef(new Animated.Value(1)).current;
 
   const C = IS_WEB ? THEME_COLORS[theme] : THEME_COLORS.dark;
@@ -576,7 +586,7 @@ export default function AddMoneyScreen() {
               marginTop: 10,
               letterSpacing: 0.2,
             }}>
-              {device.name}
+              {ITERATIONS[iterationId].name}{'  ·  '}{device.name}
             </Text>
           </View>
         </View>
@@ -588,6 +598,8 @@ export default function AddMoneyScreen() {
             onTheme={setTheme}
             deviceId={deviceId}
             onDevice={setDeviceId}
+            iterationId={iterationId}
+            onIteration={setIterationId}
           />
         </View>
       </View>
