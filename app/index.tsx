@@ -713,19 +713,16 @@ export default function AddMoneyScreen() {
           {iterationId === 'iter3' ? (
             <View style={[s.amountLockup, { gap: 0, marginTop: device.lockupMarginTop, width: '100%', paddingHorizontal: 16 }]}>
               {/* Output card — conversion amount */}
-              <View style={[s.fieldCard, { backgroundColor: C.bgTertiary }]}>
+              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
                 <View style={s.fieldCardRow}>
-                  <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3OutputFontSize, lineHeight: device.iter3OutputLineHeight, color: C.contentPrimary, flex: 1 }}>
+                  <Text style={{ fontFamily: 'Sohne-Kraftig', fontSize: device.iter3InputFontSize, lineHeight: device.iter3InputLineHeight, color: C.contentPrimary, flex: 1 }}>
                     {conversionValue || (currency === 'INR' ? '$0' : '₹0')}
-                  </Text>
-                  <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20, color: C.contentSecondary }}>
-                    {currency === 'INR' ? 'USD' : 'INR'}
                   </Text>
                 </View>
               </View>
 
-              {/* Floating toggle between cards */}
-              <View style={{ alignItems: 'flex-end', marginVertical: -12, zIndex: 1, paddingRight: 20 }}>
+              {/* Floating toggle at intersection */}
+              <View style={{ alignItems: 'center', marginVertical: -12, zIndex: 1 }}>
                 <PressableToggle
                   onPress={onToggle}
                   disabled={!!validationError}
@@ -735,7 +732,7 @@ export default function AddMoneyScreen() {
               </View>
 
               {/* Input card — amount entry */}
-              <View style={[s.fieldCard, { backgroundColor: C.bgTertiary }]}>
+              <View style={[s.fieldCard, { borderWidth: 1, borderColor: C.border }]}>
                 <View style={s.fieldCardRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     {displayAmount.split('').map((ch, i) =>
@@ -753,21 +750,16 @@ export default function AddMoneyScreen() {
                     )}
                     <Animated.View style={[s.cursor, { opacity: cursorOpacity, backgroundColor: C.contentAccent, height: device.iter3InputLineHeight }]} />
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TouchableOpacity
-                      style={[s.maxPill, { borderColor: C.border }]}
-                      onPress={() => {
-                        const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
-                        setRaw(String(maxVal));
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
-                    </TouchableOpacity>
-                    <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 14, lineHeight: 20, color: C.contentSecondary }}>
-                      {currency}
-                    </Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[s.maxPill, { borderColor: C.border }]}
+                    onPress={() => {
+                      const maxVal = currency === 'INR' ? AVAILABLE_INR : Math.floor(AVAILABLE_INR / EXCHANGE_RATE);
+                      setRaw(String(maxVal));
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontFamily: 'GrowwSans-Medium', fontSize: 11, lineHeight: 16, color: C.contentSecondary }}>Max</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
