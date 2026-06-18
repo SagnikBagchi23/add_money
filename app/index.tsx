@@ -15,7 +15,7 @@ import {
 
 type Currency = 'INR' | 'USD';
 type Theme = 'dark' | 'light';
-type DeviceId = 'se' | 'iphone6' | 'iphone15';
+type DeviceId = 'iphone6' | 'iphone15';
 type IterationId = 'iter1';
 
 // ─── Icons (Private Use Area — computed at runtime for encoding safety) ───────
@@ -84,20 +84,6 @@ type DeviceConfig = {
 };
 
 const DEVICES: Record<DeviceId, DeviceConfig> = {
-  se: {
-    name: 'iPhone SE',
-    screenW: 375,
-    screenH: 667,
-    cornerRadius: 22,
-    hasDynamicIsland: false,
-    hasNotch: false,
-    statusBarH: 44,
-    homeIndicatorH: 0,
-    numpadPadV: 8,
-    amountFontSize: 32,
-    amountLineHeight: 40,
-    lockupGap: 12,
-  },
   iphone6: {
     name: 'iPhone 6',
     screenW: 375,
